@@ -3,11 +3,12 @@ import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
-const HomeScreen = () => {
+export default function HomeScreen() {
   const navigation = useNavigation();
 
   return (
     <SafeAreaView style={styles.container}>
+      
       <ScrollView>
         <View style={styles.header}> 
           <Ionicons name="location-outline" size={20} color="#ff6b00" />
@@ -79,4 +80,3 @@ const styles = StyleSheet.create({
   date: { fontSize: 14, color: 'gray' },
 });
 
-export default HomeScreen;
