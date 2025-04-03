@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabase'; // Asegúrate de que este archivo esté configurado correctamente
 import React from 'react';
 
-function Page() {
+export default function Page() {
   const [menuItems, setMenuItems] = useState<any[]>([]);
 
   useEffect(() => {
@@ -76,5 +76,3 @@ const styles = {
     fontWeight: 'bold',
   },
 };
-
-export default Page;

@@ -17,7 +17,7 @@ export default function success() {
           router.push("/(app)")
         }*/
 
-        router.push("/(app)")
+        router.push("/(app)/client")
       }, 3000); 
 
       return () => clearTimeout(timer);
