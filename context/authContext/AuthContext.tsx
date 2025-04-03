@@ -3,7 +3,7 @@ import {onAuthStateChanged, User, signInWithEmailAndPassword, createUserWithEmai
 } from "firebase/auth";
 import { auth, db } from "@/utils/FirebaseConfig"; // Asegúrate de que Firestore esté bien inicializado
 import { useRouter } from "expo-router";
-import { collection, doc, setDoc, getDocs, query, orderBy } from "firebase/firestore";
+import { collection, doc, setDoc, getDocs, query, orderBy, getDoc } from "firebase/firestore";
 
 // Definición de la interfaz del contexto
 interface AuthContextType {
@@ -48,11 +48,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Función de inicio de sesión
+  const redirectUser = (role: string) => {
+    switch (role) {
+      case "client":
+        router.push("/(app)/client");
+        break;
+      case "cashier":
+        router.push("/(app)/cashier");
+        break;
+      case "admin":
+        router.push("/(app)/chef");
+        break;
+      default:
+        router.push("/auth"); // Página por defecto si el rol no está definido
+    }
+  };
+
   const signIn = async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push("/(app)");
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Obtener el rol desde Firestore
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        redirectUser(userData.role);
+      } else {
+        console.warn("El usuario no tiene un rol asignado.");
+        router.push("/auth");
+      }
+
       return true;
     } catch (error) {
       console.error("Error al iniciar sesión:", error);
