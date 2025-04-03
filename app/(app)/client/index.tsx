@@ -1,82 +1,188 @@
-import React from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import { Icon } from 'react-native-elements';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { supabase } from '@/utils/supabase';
+import { Redirect, useRouter } from 'expo-router';
 
-export default function HomeScreen() {
-  const navigation = useNavigation();
+const categories = ['Platos fuertes', 'Postres', 'Bebidas', 'Entradas'];
+
+const allPlates: { [key: string]: { name: string; file: string; price: string }[] } = {
+  'Platos fuertes': [
+    { name: 'Plato1', file: 'plato1.jpg', price: '$10.00' },
+  ],
+  'Postres': [
+    { name: 'Postre1', file: 'postre1.jpg', price: '$6.00' },
+  ],
+  'Entradas': [
+    { name: 'Entrada1', file: 'entrada1.jpg', price: '$5.00' },
+  ],
+  'Bebidas': [
+    { name: 'Café', file: 'bebida1.jpg', price: '$3.00' },
+  ],
+};
+
+export default function MenuScreen() {
+  const [selectedCategory, setSelectedCategory] = useState('Platos fuertes');
+  const router = useRouter();
+
+  const getImageUrl = (fileName: string) => {
+    const { data } = supabase.storage.from('menu').getPublicUrl(fileName);
+    return data?.publicUrl || '';
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      
-      <ScrollView>
-        <View style={styles.header}> 
-          <Ionicons name="location-outline" size={20} color="#ff6b00" />
-          <Text style={styles.location}>New York, Las Cruces</Text>
-          <TouchableOpacity style={styles.dateSelector}> 
-            <Text style={styles.dateText}>Select date to reservation</Text>
-          </TouchableOpacity>
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.locationContainer}>
+          <Icon name="location-on" type="material" color="#ffa500" size={20} />
+          <Text style={styles.locationText}>New York, Las Cruces</Text>
         </View>
-        
-        <View style={styles.banner}> 
-          <Text style={styles.bannerText}>Celebrate Love at GourmetGrove</Text>
-          <TouchableOpacity style={styles.detailsButton}>
-            <Text style={styles.detailsText}>Details</Text>
-          </TouchableOpacity>
+      </View>
+
+      {/* Content Card */}
+      <View style={styles.contentCard}>
+        {/* Categorías */}
+        <View style={styles.tabs}>
+          {categories.map((cat, index) => (
+            <TouchableOpacity key={index} onPress={() => setSelectedCategory(cat)}>
+              <Text style={[styles.tab, selectedCategory === cat && styles.tabSelected]}>
+                {cat}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
-        
-        <Text style={styles.sectionTitle}>Specials</Text>
+
+        {/* Lista de platos */}
         <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={[]}
+          data={allPlates[selectedCategory]}
           keyExtractor={(item, index) => index.toString()}
           renderItem={({ item }) => (
-            <View style={styles.card}>
-              <Image source={{ uri: '' }} style={styles.image} />
-              <Text style={styles.itemName}>Item Name</Text>
-              <Text style={styles.price}>$0.00</Text>
+            <View style={styles.verticalCard}>
+              <Image
+                source={{ uri: getImageUrl(item.file) }}
+                style={styles.verticalImage}
+              />
+              <View style={styles.verticalTextContainer}>
+                <Text style={styles.verticalTitle}>{item.name}</Text>
+                <Text style={styles.verticalPrice}>{item.price}</Text>
+              </View>
             </View>
           )}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
         />
-        
-        <Text style={styles.sectionTitle}>Upcoming Events</Text>
-        <FlatList
-          data={[]}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item }) => (
-            <TouchableOpacity style={styles.eventCard}>
-              <Image source={{ uri: '' }} style={styles.eventImage} />
-              <View style={styles.eventInfo}>
-                <Text style={styles.itemName}>Event Name</Text>
-                <Text style={styles.date}>Event Date</Text>
-              </View>
-            </TouchableOpacity>
-          )}
-        />
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+
+      {/* Menú inferior */}
+      <View style={styles.bottomNav}>
+        <Icon name="restaurant-menu" type="material" color="#ffa500" />
+        <TouchableOpacity onPress={() => router.navigate('/(app)/client/car')}>
+          <Icon name="shopping-cart" type="material" color="#fff" />
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#121212', padding: 16 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-  location: { fontSize: 16, fontWeight: 'bold', color: '#fff', marginLeft: 5 },
-  dateSelector: { padding: 10, backgroundColor: '#222', borderRadius: 10 },
-  dateText: { color: '#fff', textAlign: 'center' },
-  banner: { backgroundColor: '#333', padding: 20, borderRadius: 15, marginBottom: 20, alignItems: 'center' },
-  bannerText: { color: '#fff', fontSize: 18, fontWeight: 'bold', textAlign: 'center' },
-  detailsButton: { backgroundColor: '#ff6b00', padding: 10, borderRadius: 10, marginTop: 10 },
-  detailsText: { color: '#fff', textAlign: 'center', fontWeight: 'bold' },
-  sectionTitle: { fontSize: 20, fontWeight: 'bold', color: '#fff', marginVertical: 10 },
-  card: { marginRight: 16, width: 160, backgroundColor: '#1e1e1e', padding: 10, borderRadius: 10, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 5 },
-  image: { width: '100%', height: 100, borderRadius: 10 },
-  itemName: { fontSize: 16, fontWeight: 'bold', marginTop: 5, color: '#fff' },
-  price: { fontSize: 14, color: 'gray' },
-  eventCard: { flexDirection: 'row', marginBottom: 16, alignItems: 'center', backgroundColor: '#1e1e1e', padding: 10, borderRadius: 10, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 5 },
-  eventImage: { width: 80, height: 80, borderRadius: 10 },
-  eventInfo: { marginLeft: 10 },
-  date: { fontSize: 14, color: 'gray' },
+  container: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  header: {
+    padding: 20,
+    backgroundColor: '#000',
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  locationText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  contentCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 16,
+    marginTop: -10,
+  },
+  tabs: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  tab: {
+    marginRight: 16,
+    fontSize: 14,
+    color: '#999',
+    fontWeight: '600',
+  },
+  tabSelected: {
+    color: '#ffa500',
+    borderBottomWidth: 2,
+    borderBottomColor: '#ffa500',
+    paddingBottom: 4,
+  },
+  verticalCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f2f2f2',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  verticalImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+    marginRight: 12,
+  },
+  verticalTextContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  verticalTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  verticalPrice: {
+    fontSize: 14,
+    color: '#ff6b00',
+    fontWeight: '600',
+  },
+  bottomNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    borderTopWidth: 1,
+    borderTopColor: '#333',
+    paddingVertical: 12,
+    backgroundColor: '#000',
+  },
 });
 
+
+
+
+
+{/*<FlatList
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        data={[]}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({ item }) => (
+          <View style={styles.card}>
+            <Image source={{ uri: '' }} style={styles.image} />
+            <Text style={styles.itemName}>Item Name</Text>
+            <Text style={styles.price}>$0.00</Text>
+          </View>
+        )}
+      />*/}
+      
