@@ -60,6 +60,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       case "Chef":
         router.push("/(app)/chef");
         break;
+      case "admin": // Nuevo caso para el rol Admin
+        router.push("/(app)/admin");
+        break;
       default:
         router.push("/auth"); // Página por defecto si el rol no está definido
     }

@@ -1,5 +1,5 @@
 import { AuthProvider } from "@/context/authContext/AuthContext";
-import { DataProvider } from "@/context/dataContext/DataContext";
+import { DataProvider } from "@/context/dataContext/OrderContext";
 import { Stack } from "expo-router";
 import React from 'react';
 

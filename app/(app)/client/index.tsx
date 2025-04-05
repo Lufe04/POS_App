@@ -2,29 +2,21 @@ import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList, Modal, Alert, Switch } from 'react-native';
 import { Icon } from 'react-native-elements';
 import { useRouter } from 'expo-router';
-import { useData } from '@/context/dataContext/DataContext'; // Importa el DataContext
+import { useData } from '@/context/dataContext/OrderContext'; // Importa el DataContext
 import { useAuth } from '@/context/authContext/AuthContext'; // Importa el contexto de autenticación
+import { useMenu } from '@/context/dataContext/MenuContext'; // Importa el contexto del menú
 import { Picker } from '@react-native-picker/picker';
 
-const categories = ['Platos fuertes', 'Postres', 'Bebidas', 'Entradas'];
-
-const allPlates: { [key: string]: { name: string; file: string; price: string }[] } = {
-  'Platos fuertes': [
-    { name: 'Plato1', file: 'plato1.jpg', price: '$10.00' },
-  ],
-  'Postres': [
-    { name: 'Postre1', file: 'postre1.jpg', price: '$6.00' },
-  ],
-  'Entradas': [
-    { name: 'Entrada1', file: 'entrada1.jpg', price: '$5.00' },
-  ],
-  'Bebidas': [
-    { name: 'Café', file: 'bebida1.jpg', price: '$3.00' },
-  ],
-};
+const categories = [
+  { label: 'Platos fuertes', type: 'plato' },
+  { label: 'Postres', type: 'postre' },
+  { label: 'Bebidas', type: 'bebida' },
+  { label: 'Entradas', type: 'entrada' },
+];
 
 export default function MenuScreen() {
-  const [selectedCategory, setSelectedCategory] = useState('Platos fuertes');
+  const { menu } = useMenu(); // Obtén los datos del menú desde el contexto
+  const [selectedCategory, setSelectedCategory] = useState(categories[0].type); // Categoría seleccionada
   const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
   const [isCartVisible, setIsCartVisible] = useState(false); // Estado para mostrar/ocultar el carrito
   const [step, setStep] = useState(1); // Estado para manejar el paso actual
@@ -36,11 +28,14 @@ export default function MenuScreen() {
 
   const allergiesList = ['Nueces', 'Miel', 'Camarones', 'Lácteos'];
 
+  // Filtrar los platos según la categoría seleccionada
+  const filteredPlates = menu.filter((item) => item.type === selectedCategory);
+
   const getCartItems = () => {
     return Object.entries(quantities)
       .filter(([_, quantity]) => quantity > 0)
       .map(([name, quantity]) => {
-        const item = Object.values(allPlates).flat().find((plate) => plate.name === name);
+        const item = menu.find((plate) => plate.dish === name);
         return { ...item, quantity };
       });
   };
@@ -48,7 +43,7 @@ export default function MenuScreen() {
   const getTotalPrice = () => {
     const cartItems = getCartItems();
     return cartItems.reduce((total, item) => {
-      const price = parseFloat((item?.price?.replace('$', '') ?? '0'));
+      const price = parseFloat((item?.price?.toString() ?? '0'));
       return total + price * item.quantity;
     }, 0).toFixed(2);
   };
@@ -59,31 +54,31 @@ export default function MenuScreen() {
       Alert.alert('Carrito vacío', 'Por favor, agrega productos al carrito antes de ordenar.');
       return;
     }
-  
+
     if (!user) {
       Alert.alert('Error', 'No se pudo identificar al usuario. Por favor, inicia sesión.');
       return;
     }
-  
+
     if (!tableNumber) {
       Alert.alert('Número de mesa', 'Por favor, selecciona un número de mesa.');
       return;
     }
-  
+
     const total = getTotalPrice();
     const newOrder = {
       ID_Client: user.uid, // Usa el UID del usuario autenticado como ID_Client
       date: new Date().toISOString(),
       order: cartItems.map((item) => ({
-        dish: item.name ?? '', // Asegúrate de que el nombre del plato sea una cadena
+        dish: item.dish ?? '', // Asegúrate de que el nombre del plato sea una cadena
         quantity: item.quantity,
       })),
-      state: "recibido" as "recibido", // Estado inicial de la orden
+      state: 'recibido' as 'recibido', // Estado inicial de la orden
       table: tableNumber, // Número de mesa seleccionado
       total: parseFloat(total),
       allergies: Object.keys(allergies).filter((key) => allergies[key]), // Lista de alergias seleccionadas
     };
-  
+
     try {
       await createOrder(newOrder); // Llama al método createOrder del DataContext
       Alert.alert('Orden realizada', 'Tu orden ha sido enviada con éxito.');
@@ -96,10 +91,6 @@ export default function MenuScreen() {
     }
   };
 
-  function getImageUrl(file: string): string {
-    // Si las imágenes ya están en el campo `file`, simplemente devuélvelo como URL
-    return file;
-  }
   function handleDecrease(name: string): void {
     setQuantities((prev) => ({
       ...prev,
@@ -123,48 +114,44 @@ export default function MenuScreen() {
           <Text style={styles.locationText}>New York, Las Cruces</Text>
         </View>
       </View>
-
+  
       {/* Content Card */}
       <View style={styles.contentCard}>
         {/* Categorías */}
         <View style={styles.tabs}>
           {categories.map((cat, index) => (
-            <TouchableOpacity key={index} onPress={() => setSelectedCategory(cat)}>
-              <Text style={[styles.tab, selectedCategory === cat && styles.tabSelected]}>
-                {cat}
+            <TouchableOpacity key={index} onPress={() => setSelectedCategory(cat.type)}>
+              <Text style={[styles.tab, selectedCategory === cat.type && styles.tabSelected]}>
+                {cat.label}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
-
+  
         {/* Lista de platos */}
         <FlatList
-          data={allPlates[selectedCategory]}
-          keyExtractor={(item, index) => index.toString()}
+          data={filteredPlates}
+          keyExtractor={(item) => item.ID_dish}
           renderItem={({ item }) => (
             <View style={styles.verticalCard}>
-              <Image
-                source={{ uri: getImageUrl(item.file) }}
-                style={styles.verticalImage}
-              />
               <View style={styles.verticalTextContainer}>
-                <Text style={styles.verticalTitle}>{item.name}</Text>
-                <Text style={styles.verticalPrice}>{item.price}</Text>
+                <Text style={styles.verticalTitle}>{item.dish}</Text>
+                <Text style={styles.verticalPrice}>${item.price}</Text>
               </View>
               {/* Contador */}
               <View style={styles.counterContainer}>
                 <TouchableOpacity
                   style={styles.counterButton}
-                  onPress={() => handleDecrease(item.name)}
+                  onPress={() => handleDecrease(item.dish)}
                 >
                   <Text style={styles.counterText}>-</Text>
                 </TouchableOpacity>
                 <Text style={styles.counterValue}>
-                  {quantities[item.name] || 0}
+                  {quantities[item.dish] || 0}
                 </Text>
                 <TouchableOpacity
                   style={styles.counterButton}
-                  onPress={() => handleIncrease(item.name)}
+                  onPress={() => handleIncrease(item.dish)}
                 >
                   <Text style={styles.counterText}>+</Text>
                 </TouchableOpacity>
@@ -175,97 +162,97 @@ export default function MenuScreen() {
           showsVerticalScrollIndicator={false}
         />
       </View>
-
-      {/* Ícono del carrito */}
-      {/* Ícono del carrito */}
-      <TouchableOpacity
-        style={styles.cartButton}
-        onPress={() => {
-          setStep(1); // Restablece el paso al inicial
-          setIsCartVisible(true); // Abre el modal del carrito
-        }}
-      >
+  
+      {/* Botón para abrir el carrito */}
+      <TouchableOpacity style={styles.cartButton} onPress={() => setIsCartVisible(true)}>
         <Icon name="shopping-cart" type="material" color="#fff" size={24} />
       </TouchableOpacity>
-
+  
       {/* Modal del carrito */}
-      <Modal
-        visible={isCartVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setIsCartVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            {step === 1 ? (
-              <>
-                <Text style={styles.modalTitle}>Carrito</Text>
-                <FlatList
-                  data={getCartItems()}
-                  keyExtractor={(item, index) => index.toString()}
-                  renderItem={({ item }) => (
-                    <View style={styles.cartItem}>
-                      <Text style={styles.cartItemText}>{item.name}</Text>
-                      <Text style={styles.cartItemText}>x{item.quantity}</Text>
-                      <Text style={styles.cartItemText}>{item.price}</Text>
-                    </View>
-                  )}
-                />
-                <Text style={styles.totalText}>Total: ${getTotalPrice()}</Text>
-                <TouchableOpacity
-                  style={styles.nextButton}
-                  onPress={() => setStep(2)}
-                >
-                  <Text style={styles.nextButtonText}>Siguiente</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <Text style={styles.label}>Número de mesa:</Text>
-                <View style={styles.tablePickerContainer}>
-                  <Text style={styles.tablePickerLabel}>Número de mesa:</Text>
-                  <Picker
-                    selectedValue={tableNumber}
-                    style={styles.tablePicker}
-                    onValueChange={(itemValue) => setTableNumber(itemValue)}
-                  >
-                    <Picker.Item label="Selecciona" value={null} />
-                    {[...Array(10).keys()].map((num) => (
-                      <Picker.Item key={num + 1} label={`${num + 1}`} value={num + 1} />
-                    ))}
-                  </Picker>
-                </View>
-                <Text style={styles.label}>Alergias:</Text>
-                <View style={styles.allergiesContainer}>
-                  {allergiesList.map((allergy) => (
-                    <View key={allergy} style={styles.allergyItem}>
-                      <Text style={styles.allergyText}>{allergy}</Text>
-                      <Switch
-                        trackColor={{ false: '#ccc', true: '#ffa500' }}
-                        thumbColor={allergies[allergy] ? '#fff' : '#f4f3f4'}
-                        ios_backgroundColor="#ccc"
-                        onValueChange={(value) =>
-                          setAllergies((prev) => ({ ...prev, [allergy]: value }))
-                        }
-                        value={allergies[allergy] || false}
-                      />
-                    </View>
-                  ))}
-                </View>
-                <TouchableOpacity
-                  style={styles.orderButton}
-                  onPress={handleOrder}
-                >
-                  <Text style={styles.orderButtonText}>Ordenar</Text>
-                </TouchableOpacity>
-              </>
+      {/* Modal del carrito */}
+<Modal visible={isCartVisible} animationType="slide" transparent>
+  <View style={styles.modalContainer}>
+    <View style={styles.modalContent}>
+      {step === 1 ? (
+        <>
+          <Text style={styles.modalTitle}>Tu Carrito</Text>
+          <FlatList
+            data={getCartItems()}
+            keyExtractor={(item) => item.dish ?? 'unknown-dish'}
+            renderItem={({ item }) => (
+              <View style={styles.cartItem}>
+                <Text style={styles.cartItemText}>{item.dish}</Text>
+                <Text style={styles.cartItemText}>x{item.quantity}</Text>
+                <Text style={styles.cartItemText}>${((item.price ?? 0) * item.quantity).toFixed(2)}</Text>
+              </View>
             )}
+          />
+          <Text style={styles.totalText}>Total: ${getTotalPrice()}</Text>
+          <TouchableOpacity
+            style={styles.nextButton}
+            onPress={() => setStep(2)} // Ir a la segunda parte
+          >
+            <Text style={styles.nextButtonText}>Continuar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.closeButton} onPress={() => setIsCartVisible(false)}>
+            <Text style={styles.closeButtonText}>Cerrar</Text>
+          </TouchableOpacity>
+        </>
+      ) : (
+        <>
+          <Text style={styles.modalTitle}>Detalles de la Orden</Text>
+          {/* Selección de mesa */}
+          <View style={styles.tablePickerContainer}>
+            <Text style={styles.tablePickerLabel}>Número de mesa:</Text>
+            <Picker
+              selectedValue={tableNumber}
+              style={styles.tablePicker}
+              onValueChange={(itemValue) => setTableNumber(itemValue)}
+            >
+              <Picker.Item label="Selecciona" value={null} />
+              {[...Array(10).keys()].map((num) => (
+                <Picker.Item key={num + 1} label={`Mesa ${num + 1}`} value={num + 1} />
+              ))}
+            </Picker>
           </View>
-        </View>
-      </Modal>
+
+          {/* Selección de alergias */}
+          <View style={styles.allergiesContainer}>
+            <Text style={styles.label}>Alergias:</Text>
+            {allergiesList.map((allergy) => (
+              <View key={allergy} style={styles.allergyItem}>
+                <Text style={styles.allergyText}>{allergy}</Text>
+                <Switch
+                  value={allergies[allergy] || false}
+                  onValueChange={(value) =>
+                    setAllergies((prev) => ({ ...prev, [allergy]: value }))
+                  }
+                />
+              </View>
+            ))}
+          </View>
+
+          <TouchableOpacity style={styles.orderButton} onPress={handleOrder}>
+            <Text style={styles.orderButtonText}>Confirmar Orden</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => {
+              setStep(1); // Regresar al paso 1
+              setIsCartVisible(false);
+            }}
+          >
+            <Text style={styles.closeButtonText}>Cerrar</Text>
+          </TouchableOpacity>
+        </>
+      )}
+    </View>
+  </View>
+</Modal>
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
