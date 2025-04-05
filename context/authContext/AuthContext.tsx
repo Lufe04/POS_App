@@ -4,6 +4,7 @@ import {onAuthStateChanged, User, signInWithEmailAndPassword, createUserWithEmai
 import { auth, db } from "@/utils/FirebaseConfig"; // Asegúrate de que Firestore esté bien inicializado
 import { useRouter } from "expo-router";
 import { collection, doc, setDoc, getDocs, query, orderBy, getDoc } from "firebase/firestore";
+import { Alert } from "react-native";
 
 // Definición de la interfaz del contexto
 interface AuthContextType {
@@ -50,13 +51,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const redirectUser = (role: string) => {
     switch (role) {
-      case "client":
+      case "Client":
         router.push("/(app)/client");
         break;
-      case "cashier":
+      case "Cashier":
         router.push("/(app)/cashier");
         break;
-      case "admin":
+      case "Chef":
         router.push("/(app)/chef");
         break;
       default:
@@ -73,26 +74,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userDoc = await getDoc(doc(db, "users", user.uid));
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        redirectUser(userData.role);
+        if (userData.role) {
+          redirectUser(userData.role);
+        } else {
+          console.warn("El usuario no tiene un rol asignado.");
+          router.push("/auth");
+        }
       } else {
-        console.warn("El usuario no tiene un rol asignado.");
+        console.warn("El documento del usuario no existe.");
         router.push("/auth");
       }
 
       return true;
-    } catch (error) {
-      console.error("Error al iniciar sesión:", error);
-      return false;
-    }
-  };
+      } catch (error: any) {
+        if (error.code === "auth/user-not-found") {
+          Alert.alert("Error", "Usuario no encontrado.");
+        } else if (error.code === "auth/wrong-password") {
+          Alert.alert("Error", "Contraseña incorrecta.");
+        } else {
+          Alert.alert("Error", "No se pudo iniciar sesión.");
+        }
+        console.error("Error al iniciar sesión:", error);
+        return false;
+      }
+    };
 
   // Función de registro de usuario con almacenamiento en Firestore
-  const signUp = async (name: string, role: string, email: string, password: string) => {
+  const signUp = async (email: string, password: string, name: string, role: string) => {
+    console.log("Datos enviados a Firebase:", { email, password, name, role }); // Verifica los datos
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
+  
       const newUserId = await getNextUserId();
-
       await setDoc(doc(db, "users", user.uid), {
         id: newUserId,
         email,
@@ -100,11 +114,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role,
         createdAt: new Date().toISOString(),
       });
-
+  
       setUser(user);
-      router.push("/(app)");
+      redirectUser(role); // Redirigir según el rol
       return true;
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === "auth/email-already-in-use") {
+        Alert.alert("Error", "El correo ya está registrado.");
+      } else {
+        Alert.alert("Error", "No se pudo registrar.");
+      }
       console.error("Error al registrarse:", error);
       return false;
     }
@@ -115,9 +134,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await signOut(auth);
       setUser(null);
-      router.push("/auth");
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
+    } finally {
+      router.push("/auth");
     }
   };
 
