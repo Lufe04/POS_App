@@ -14,7 +14,7 @@ export default function ChefOrdersScreen() {
   // 🔶 Este render usa los datos simulados
   const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity
-      style={styles.card}
+      style={[styles.card, item.state === 'recibido' && { backgroundColor: '#FFF3E0' }]}
       // 🔶 RUTA DINÁMICA – asegúrate que /orders/[id].tsx existe
       onPress={() => router.navigate({ pathname: "/(app)/chef/orderDetail", params: { id: item.ID_Order } })}
 
@@ -33,7 +33,7 @@ export default function ChefOrdersScreen() {
     <View style={styles.screen}>
         <View style={styles.cardContainer}>
             <FlatList
-            data={orders}
+            data={orders.filter((order) => order.state !== 'entregado')}
             renderItem={renderItem}
             keyExtractor={(item) => item.ID_Order}
             ListEmptyComponent={

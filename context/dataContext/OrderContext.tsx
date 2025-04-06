@@ -34,13 +34,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const docRef = await addDoc(collection(db, 'orders'), {
         ...newOrder,
+        date: new Date().toISOString(), // Campo necesario para orden cronológico
       });
   
-      // Actualiza el documento para incluir el ID generado por Firestore
+      // Guarda también el ID generado por Firestore
       await updateDoc(docRef, { ID_Order: docRef.id });
   
       console.log('Orden creada con ID:', docRef.id);
-      await getOrders(); // Actualiza la lista de órdenes
+      await getOrders(); // Refresca la lista
     } catch (error) {
       console.error('Error al crear la orden:', error);
     }
@@ -49,10 +50,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Leer todas las órdenes
   const getOrders = async () => {
     try {
-      const querySnapshot = await getDocs(collection(db, 'orders'));
+      const q = query(collection(db, 'orders'), orderBy('date', 'asc')); // Asegura orden cronológico
+      const querySnapshot = await getDocs(q);
       const ordersData = querySnapshot.docs.map((doc) => ({
-        ID_Order: doc.id,
         ...doc.data(),
+        ID_Order: doc.id,
       })) as Order[];
 
       setOrders(ordersData);
@@ -74,7 +76,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(`El documento con ID ${ID_Order} no existe.`);
       }
   
-      await updateDoc(orderRef, updatedFields); // Actualiza los campos proporcionados
+      await updateDoc(orderRef, {
+        ...updatedFields,
+        statusUpdatedAt: new Date().toISOString(), // ⏱ Marca el momento del cambio
+      });
       console.log(`Orden actualizada: ${ID_Order}, Campos:`, updatedFields);
       await getOrders(); // Actualiza la lista de órdenes
     } catch (error) {
