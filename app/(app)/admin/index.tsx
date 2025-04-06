@@ -24,10 +24,11 @@ export default function AdminScreen() {
     }
     try {
       await addMenuItem({
-        name: newDish.name,
-        description: newDish.description,
-        price: parseFloat(newDish.price),
-        type: newDish.type,
+          name: newDish.name,
+          description: newDish.description,
+          price: parseFloat(newDish.price),
+          type: newDish.type,
+          dish: ""
       });
       setNewDish({ name: "", description: "", price: "", type: "plato" });
       Alert.alert("Éxito", "Plato agregado correctamente.");

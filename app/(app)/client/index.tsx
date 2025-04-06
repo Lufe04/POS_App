@@ -3,7 +3,7 @@ import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList, Modal, Alert
 import { Icon } from 'react-native-elements';
 import { useRouter } from 'expo-router';
 import { useData } from '@/context/dataContext/OrderContext'; // Importa el DataContext
-import { useAuth } from '@/context/authContext/AuthContext'; // Importa el contexto de autenticación
+import { useAuth} from '@/context/authContext/AuthContext'; // Importa el contexto de autenticación
 import { useMenu } from '@/context/dataContext/MenuContext'; // Importa el contexto del menú
 import { Picker } from '@react-native-picker/picker';
 
@@ -23,7 +23,7 @@ export default function MenuScreen() {
   const [tableNumber, setTableNumber] = useState<number | null>(null); // Número de mesa
   const [allergies, setAllergies] = useState<{ [key: string]: boolean }>({}); // Estado para las alergias
   const { createOrder } = useData(); // Accede al método createOrder del DataContext
-  const { user } = useAuth(); // Accede al usuario autenticado desde el contexto de autenticación
+  const { user, signOut } = useAuth(); // Accede al usuario autenticado desde el contexto de autenticación
   const router = useRouter();
 
   const allergiesList = ['Nueces', 'Miel', 'Camarones', 'Lácteos'];
@@ -110,11 +110,21 @@ export default function MenuScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.locationContainer}>
-          <Icon name="location-on" type="material" color="#ffa500" size={20} />
-          <Text style={styles.locationText}>New York, Las Cruces</Text>
-        </View>
+      <View style={styles.locationContainer}>
+        <Icon name="location-on" type="material" color="#ffa500" size={20} />
+        <Text style={styles.locationText}>New York, Las Cruces</Text>
       </View>
+      <TouchableOpacity style={styles.logoutButton} onPress={async () => {
+        try {
+          await signOut();
+          router.replace('/auth');
+        } catch (error) {
+          Alert.alert('Error', 'Hubo un problema al cerrar sesión. Inténtalo de nuevo.');
+        }
+      }}>
+        <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
+      </TouchableOpacity>
+    </View>
   
       {/* Content Card */}
       <View style={styles.contentCard}>
@@ -131,37 +141,38 @@ export default function MenuScreen() {
   
         {/* Lista de platos */}
         <FlatList
-          data={filteredPlates}
-          keyExtractor={(item) => item.ID_dish}
-          renderItem={({ item }) => (
-            <View style={styles.verticalCard}>
-              <View style={styles.verticalTextContainer}>
-                <Text style={styles.verticalTitle}>{item.dish}</Text>
-                <Text style={styles.verticalPrice}>${item.price}</Text>
-              </View>
-              {/* Contador */}
-              <View style={styles.counterContainer}>
-                <TouchableOpacity
-                  style={styles.counterButton}
-                  onPress={() => handleDecrease(item.dish)}
-                >
-                  <Text style={styles.counterText}>-</Text>
-                </TouchableOpacity>
-                <Text style={styles.counterValue}>
-                  {quantities[item.dish] || 0}
-                </Text>
-                <TouchableOpacity
-                  style={styles.counterButton}
-                  onPress={() => handleIncrease(item.dish)}
-                >
-                  <Text style={styles.counterText}>+</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-          contentContainerStyle={{ paddingBottom: 100 }}
-          showsVerticalScrollIndicator={false}
-        />
+  data={filteredPlates}
+  keyExtractor={(item) => item.ID_dish}
+  renderItem={({ item }) => (
+    <View style={styles.verticalCard}>
+      <View style={styles.verticalTextContainer}>
+        <Text style={styles.verticalTitle}>{item.dish}</Text> {/* Nombre del plato */}
+        <Text style={styles.verticalDescription}>{item.description}</Text> {/* Descripción del plato */}
+        <Text style={styles.verticalPrice}>${item.price}</Text> {/* Precio del plato */}
+      </View>
+      {/* Contador */}
+      <View style={styles.counterContainer}>
+        <TouchableOpacity
+          style={styles.counterButton}
+          onPress={() => handleDecrease(item.dish)}
+        >
+          <Text style={styles.counterText}>-</Text>
+        </TouchableOpacity>
+        <Text style={styles.counterValue}>
+          {quantities[item.dish] || 0}
+        </Text>
+        <TouchableOpacity
+          style={styles.counterButton}
+          onPress={() => handleIncrease(item.dish)}
+        >
+          <Text style={styles.counterText}>+</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  )}
+  contentContainerStyle={{ paddingBottom: 100 }}
+  showsVerticalScrollIndicator={false}
+/>  
       </View>
   
       {/* Botón para abrir el carrito */}
@@ -282,6 +293,19 @@ const styles = StyleSheet.create({
     padding: 16,
     marginTop: -10,
   },
+  logoutButton: {
+    backgroundColor: '#ff4d4d',
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 'auto', // Alinea el botón al extremo derecho
+  },
+  logoutButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
   tabs: {
     flexDirection: 'row',
     marginBottom: 16,
@@ -321,6 +345,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 4,
+  },
+  verticalDescription: {
+    fontSize: 14,
+    color: '#666', // Color más tenue para diferenciarlo del título
+    marginBottom: 4, // Espaciado inferior
   },
   verticalPrice: {
     fontSize: 14,
