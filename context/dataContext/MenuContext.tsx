@@ -3,7 +3,7 @@ import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "firebase
 import { db } from "@/utils/FirebaseConfig"; // Asegúrate de que este sea el path correcto a tu configuración de Firebase
 
 // Define la estructura del menú
-interface MenuItem {
+export interface MenuItem {
   ID_dish: string;
   description: string;
   dish: string;
@@ -17,15 +17,16 @@ interface MenuContextProps {
   updateMenuItem: (id: string, updatedItem: Partial<MenuItem>) => Promise<void>;
   deleteMenuItem: (id: string) => Promise<void>;
   fetchMenu: () => Promise<void>;
+  getMenu: () => Promise<MenuItem[]>; // Added getMenu to the interface
 }
 
 // Define la estructura del menú
-interface MenuItem {
-    ID_dish: string;
-    description: string;
-    dish: string;
-    price: number;
-    type: "plato" | "bebida" | "entrada" | "postre"; // Nuevo campo para el tipo
+export interface MenuItem {
+    ID_dish: string; // ID del plato (usado como ID del documento en Firestore)
+    name: string; // Nombre del plato
+    description: string; // Descripción del plato
+    price: number; // Precio del plato
+    type: "plato" | "bebida" | "entrada" | "postre"; // Tipo del plato
   }
 
 // Crear el contexto
@@ -41,14 +42,30 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const menuRef = collection(db, "menu");
       const querySnapshot = await getDocs(menuRef);
       const menuData = querySnapshot.docs.map((doc) => ({
-        ID_dish: doc.id,
-        ...doc.data(),
-      })) as MenuItem[];
+        ID_dish: doc.id, // Usa el ID del documento como ID_dish
+        ...(doc.data() as Omit<MenuItem, "ID_dish">), // Asegúrate de que los datos coincidan con MenuItem
+      }));
       setMenu(menuData);
     } catch (error) {
       console.error("Error al obtener el menú:", error);
     }
   };
+
+     const getMenu = async (): Promise<MenuItem[]> => {
+    try {
+      const menuRef = collection(db, "menu");
+      const querySnapshot = await getDocs(menuRef);
+      const menuData = querySnapshot.docs.map((doc) => ({
+        ID_dish: doc.id, // Usa el ID del documento como ID_dish
+        ...(doc.data() as Omit<MenuItem, "ID_dish">), // Asegúrate de que los datos coincidan con MenuItem
+      }));
+      return menuData;
+    } catch (error) {
+      console.error("Error al obtener el menú:", error);
+      return [];
+    }
+  };
+
   // Crear un nuevo elemento en el menú
   const addMenuItem = async (item: Omit<MenuItem, "ID_dish">) => {
     try {
@@ -96,7 +113,7 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   return (
-    <MenuContext.Provider value={{ menu, addMenuItem, updateMenuItem, deleteMenuItem, fetchMenu }}>
+    <MenuContext.Provider value={{ menu, addMenuItem, updateMenuItem, deleteMenuItem, fetchMenu, getMenu }}>
       {children}
     </MenuContext.Provider>
   );

@@ -1,45 +1,42 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert } from "react-native";
-import { useMenu } from "@/context/dataContext/MenuContext"; // Contexto para el menú
-import { useData } from "@/context/dataContext/OrderContext"; // Contexto para las órdenes
+import { useMenu, MenuItem } from "@/context/dataContext/MenuContext";
 
 export default function AdminScreen() {
-  const { menu, addMenuItem, updateMenuItem, deleteMenuItem } = useMenu();
-  const { orders, updateOrder, deleteOrder } = useData();
+  const { menu, addMenuItem, deleteMenuItem } = useMenu();
 
   const [newDish, setNewDish] = useState<{
-    dish: string;
+    name: string;
     description: string;
     price: string;
     type: "plato" | "bebida" | "entrada" | "postre";
   }>({
-    dish: "",
+    name: "",
     description: "",
     price: "",
-    type: "plato", // Valor inicial válido
+    type: "plato",
   });
 
-  // Manejo de creación de un nuevo plato
   const handleAddMenuItem = async () => {
-    if (!newDish.dish || !newDish.description || !newDish.price || !newDish.type) {
+    if (!newDish.name || !newDish.description || !newDish.price || !newDish.type) {
       Alert.alert("Error", "Por favor, completa todos los campos.");
       return;
     }
     try {
       await addMenuItem({
-        dish: newDish.dish,
-        description: newDish.description,
-        price: parseFloat(newDish.price),
-        type: newDish.type, // Tipo seleccionado
+          name: newDish.name,
+          description: newDish.description,
+          price: parseFloat(newDish.price),
+          type: newDish.type,
+          dish: ""
       });
-      setNewDish({ dish: "", description: "", price: "", type: "plato" });
+      setNewDish({ name: "", description: "", price: "", type: "plato" });
       Alert.alert("Éxito", "Plato agregado correctamente.");
     } catch (error) {
       Alert.alert("Error", "Hubo un problema al agregar el plato.");
     }
   };
 
-  // Manejo de eliminación de un plato
   const handleDeleteMenuItem = async (id: string) => {
     try {
       await deleteMenuItem(id);
@@ -56,8 +53,8 @@ export default function AdminScreen() {
         <TextInput
           style={styles.input}
           placeholder="Nombre del plato"
-          value={newDish.dish}
-          onChangeText={(text) => setNewDish({ ...newDish, dish: text })}
+          value={newDish.name}
+          onChangeText={(text) => setNewDish({ ...newDish, name: text })}
         />
         <TextInput
           style={styles.input}
@@ -102,7 +99,7 @@ export default function AdminScreen() {
         keyExtractor={(item) => item.ID_dish}
         renderItem={({ item }) => (
           <View style={styles.item}>
-            <Text style={styles.itemText}>{item.dish}</Text>
+            <Text style={styles.itemText}>{item.name}</Text>
             <Text style={styles.itemText}>{item.description}</Text>
             <Text style={styles.itemText}>${item.price}</Text>
             <Text style={styles.itemText}>Tipo: {item.type}</Text>
@@ -118,6 +115,7 @@ export default function AdminScreen() {
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
