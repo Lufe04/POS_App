@@ -1,96 +1,55 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
-
-// 🧪 Simula el rol actual para pruebas: cambia entre "chef" y "cashier"
-type UserRole = "chef" | "cashier";
-const currentUserRole: UserRole = "chef";
-
-// 🧪 Mock de órdenes para pruebas
-const MOCK_ORDERS = [
-  {
-    id: "order001",
-    mesa: 3,
-    items: [
-      { nombre: "Char-Grilled Filet Mignon", cantidad: 1, precio: 380000 },
-      { nombre: "Cabernet Sauvignon", cantidad: 2, precio: 220000 }
-    ]
-  }
-];
+import { useData } from '@/context/dataContext/OrderContext';
 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const { orders, updateOrder } = useData();
 
-  const order = MOCK_ORDERS.find(o => o.id === id);
+  const [order, setOrder] = useState<any | null>(null);
 
+  useEffect(() => {
+    const found = orders.find((o) => o.ID_Order === id);
+    setOrder(found || null);
+  }, [orders, id]);
+  
   if (!order) {
     return <Text style={{ padding: 20 }}>Orden no encontrada</Text>;
   }
 
-  const subtotal = order.items.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
+  const subtotal = order.order.reduce(
+    (acc: number, item: any) => acc + item.quantity * 10000, // usar item.price si lo tienes
+    0
+  );
   const tax = subtotal * 0.1;
   const total = subtotal + tax;
 
-  const mostrarPrecios = currentUserRole === "cashier";
-  const mostrarBoton = ["chef", "cashier"].includes(currentUserRole); // ✅ sin error ts(2367)
-
-  const completarOrden = () => {
-    const mensaje =
-      currentUserRole === "cashier"
-        ? "Orden marcada como pagada 💰"
-        : "Orden marcada como completada 👨‍🍳";
-
-    alert(mensaje);
-    router.replace('/chefOrders');
+  const marcarComoEntregada = async () => {
+    await updateOrder(order.ID_Order, { state: 'entregado' });
+    alert('Orden marcada como completada 👨‍🍳');
+    router.back();
   };
 
   return (
     <View style={styles.screen}>
       <View style={styles.card}>
         <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-          <Text style={styles.title}>Orden #{order.id.slice(-3)}</Text>
-          <Text style={styles.subtitle}>Mesa: {order.mesa}</Text>
+          <Text style={styles.title}>Orden #{order.ID_Order.slice(-3)}</Text>
+          <Text style={styles.subtitle}>Mesa: {order.table}</Text>
 
           <Text style={styles.section}>Items</Text>
-          {order.items.map((item, idx) => (
+          {order.order.map((item: any, idx: number) => (
             <View key={idx} style={styles.itemRow}>
-              <Text style={styles.itemName}>{item.nombre}</Text>
-              <Text style={styles.itemCantidad}>x{item.cantidad}</Text>
-              {mostrarPrecios && (
-                <Text style={styles.itemPrecio}>
-                  ${(item.precio * item.cantidad).toLocaleString()}
-                </Text>
-              )}
+              <Text style={styles.itemName}>{item.dish}</Text>
+              <Text style={styles.itemCantidad}>x{item.quantity}</Text>
             </View>
           ))}
-
-          {mostrarPrecios && (
-            <View style={styles.summaryContainer}>
-              <Text style={styles.section}>Resumen</Text>
-              <View style={styles.summaryRow}>
-                <Text style={styles.label}>Subtotal</Text>
-                <Text style={styles.value}>${subtotal.toLocaleString()}</Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.label}>IVA (10%)</Text>
-                <Text style={styles.value}>${tax.toLocaleString()}</Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.totalLabel}>Total</Text>
-                <Text style={styles.totalValue}>${total.toLocaleString()}</Text>
-              </View>
-            </View>
-          )}
         </ScrollView>
-
-        {mostrarBoton && (
-          <Pressable style={styles.boton} onPress={completarOrden}>
-            <Text style={styles.botonTexto}>
-              {currentUserRole === "cashier" ? "Marcar como pagada 💰" : "Marcar como completada ✅"}
-            </Text>
-          </Pressable>
-        )}
+        <Pressable style={styles.boton} onPress={marcarComoEntregada}>
+          <Text style={styles.botonTexto}>Orden completada</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -142,41 +101,6 @@ const styles = StyleSheet.create({
     width: 40,
     textAlign: 'center',
     color: '#444',
-  },
-  itemPrecio: {
-    fontSize: 15,
-    width: 80,
-    textAlign: 'right',
-    color: '#444',
-  },
-  summaryContainer: {
-    marginTop: 20,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginVertical: 4,
-  },
-  label: {
-    fontSize: 14,
-    color: '#888',
-  },
-  value: {
-    fontSize: 14,
-    color: '#444',
-  },
-  totalLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  totalValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#000',
   },
   boton: {
     position: 'absolute',
