@@ -14,6 +14,7 @@ type Order = {
   order: { dish: string; quantity: number }[];
   total: number;
   table: string | number;
+  statusUpdatedAt?: string;
 };
 
 export default function OrderStatusScreen() {
@@ -124,7 +125,13 @@ export default function OrderStatusScreen() {
                 ? 'Tu orden está siendo preparada.'
                 : order.state === 'entregado'
                 ? 'Tu orden ha sido entregada.'
-                : 'Estado desconocido.'}
+                : 'Estado desconocido.'
+              },
+              {order.statusUpdatedAt && (
+                <Text style={styles.timestamp}>
+                  Última actualización: {new Date(order.statusUpdatedAt).toLocaleString()}
+                </Text>
+              )},
             </Text>
           </View>
 
@@ -228,4 +235,9 @@ const styles = StyleSheet.create({
   quantityText: { marginHorizontal: 8, fontSize: 16 },
   confirmButton: { backgroundColor: '#ffa500', padding: 12, borderRadius: 8, alignItems: 'center', marginTop: 16 },
   confirmButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  timestamp: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 8,
+  },   
 });

@@ -23,8 +23,11 @@ export default function OrderDetailScreen() {
     (acc: number, item: any) => acc + item.quantity * 10000, // usar item.price si lo tienes
     0
   );
-  const tax = subtotal * 0.1;
-  const total = subtotal + tax;
+
+  const marcarEnProceso = async () => {
+    await updateOrder(order.ID_Order, { state: 'en proceso' });
+    alert('Orden marcada como en proceso 🔄');
+  };
 
   const marcarComoEntregada = async () => {
     await updateOrder(order.ID_Order, { state: 'entregado' });
@@ -47,9 +50,18 @@ export default function OrderDetailScreen() {
             </View>
           ))}
         </ScrollView>
-        <Pressable style={styles.boton} onPress={marcarComoEntregada}>
-          <Text style={styles.botonTexto}>Orden completada</Text>
-        </Pressable>
+        <View style={styles.buttonRow}>
+          {order.state === 'recibido' && (
+            <Pressable style={[styles.boton, styles.botonSecundario]} onPress={marcarEnProceso}>
+              <Text style={styles.botonTextoSecundario}>En proceso</Text>
+            </Pressable>
+          )}
+          {order.state === 'en proceso' && (
+            <Pressable style={[styles.boton, styles.botonPrincipal]} onPress={marcarComoEntregada}>
+              <Text style={styles.botonTextoPrincipal}>Completada</Text>
+            </Pressable>
+          )}
+        </View>
       </View>
     </View>
   );
@@ -101,19 +113,34 @@ const styles = StyleSheet.create({
     width: 40,
     textAlign: 'center',
     color: '#444',
-  },
-  boton: {
+  },buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     position: 'absolute',
     bottom: 20,
     left: 24,
     right: 24,
-    backgroundColor: '#FF5E3A',
+  },
+  boton: {
+    flex: 1,
+    marginHorizontal: 6,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
-  botonTexto: {
+  botonPrincipal: {
+    backgroundColor: '#FF5E3A',
+  },
+  botonSecundario: {
+    backgroundColor: '#EEE',
+  },
+  botonTextoPrincipal: {
     color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  botonTextoSecundario: {
+    color: '#333',
     fontSize: 16,
     fontWeight: '600',
   },
