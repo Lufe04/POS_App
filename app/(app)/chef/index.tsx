@@ -1,48 +1,30 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-
-// 🔸 Interfaz del tipo de orden
-interface Order {
-  id: string;
-  mesa: number;
-  resumen: string;
-  total: number;
-}
+import { useData } from '@/context/dataContext/OrderContext';
 
 export default function ChefOrdersScreen() {
   const router = useRouter();
-
-  // 🔶 DATOS DE PRUEBA – reemplazar por datos reales desde Firestore
-  const orders: Order[] = [
-    {
-      id: "order001",
-      mesa: 3,
-      resumen: "2x Pasta, 1x Agua",
-      total: 32000
-    },
-    {
-      id: "order002",
-      mesa: 5,
-      resumen: "1x Ensalada, 2x Jugo",
-      total: 28000
-    }
-  ];
+  const { orders, getOrders } = useData();
+  
+  useEffect(() => {
+    getOrders(); // Cargar órdenes al montar la pantalla
+  }, []);
 
   // 🔶 Este render usa los datos simulados
-  const renderItem = ({ item }: { item: Order }) => (
+  const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity
       style={styles.card}
       // 🔶 RUTA DINÁMICA – asegúrate que /orders/[id].tsx existe
-      onPress={() => router.push({ pathname: "/orderDetail", params: { id: item.id } })}
+      onPress={() => router.navigate({ pathname: "/(app)/chef/orderDetail", params: { id: item.ID_Order } })}
 
 
     >
       <View style={styles.cardHeader}>
-        <Text style={styles.orderId}>Orden #{item.id.slice(-3)}</Text>
-        <Text style={styles.mesa}>Mesa {item.mesa}</Text>
+        <Text style={styles.orderId}>Orden #{item.ID_Order.slice(-3)}</Text>
+        <Text style={styles.mesa}>Mesa {item.table}</Text>
       </View>
-      <Text style={styles.resumen}>{item.resumen}</Text>
+      <Text style={styles.resumen}>{item.order.map((o: any) => `${o.quantity}x ${o.dish}`).join(', ')}</Text>
       <Text style={styles.total}>Total: ${item.total.toLocaleString()}</Text>
     </TouchableOpacity>
   );
@@ -53,8 +35,10 @@ export default function ChefOrdersScreen() {
             <FlatList
             data={orders}
             renderItem={renderItem}
-            keyExtractor={(item) => item.id}
-            ListEmptyComponent={<Text style={styles.emptyText}>No hay órdenes pendientes 🍽️</Text>}
+            keyExtractor={(item) => item.ID_Order}
+            ListEmptyComponent={
+            <Text style={styles.emptyText}>No hay órdenes pendientes 🍽️</Text>
+          }
             contentContainerStyle={{ paddingBottom: 40 }}
             />
         </View>
