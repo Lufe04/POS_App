@@ -1,35 +1,109 @@
 import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList, Modal, Alert, Switch } from 'react-native';
 import { Icon } from 'react-native-elements';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { supabase } from '@/utils/supabase';
-import { Redirect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { useData } from '@/context/dataContext/OrderContext'; // Importa el DataContext
+import { useAuth } from '@/context/authContext/AuthContext'; // Importa el contexto de autenticación
+import { useMenu } from '@/context/dataContext/MenuContext'; // Importa el contexto del menú
+import { Picker } from '@react-native-picker/picker';
 
-const categories = ['Platos fuertes', 'Postres', 'Bebidas', 'Entradas'];
-
-const allPlates: { [key: string]: { name: string; file: string; price: string }[] } = {
-  'Platos fuertes': [
-    { name: 'Plato1', file: 'plato1.jpg', price: '$10.00' },
-  ],
-  'Postres': [
-    { name: 'Postre1', file: 'postre1.jpg', price: '$6.00' },
-  ],
-  'Entradas': [
-    { name: 'Entrada1', file: 'entrada1.jpg', price: '$5.00' },
-  ],
-  'Bebidas': [
-    { name: 'Café', file: 'bebida1.jpg', price: '$3.00' },
-  ],
-};
+const categories = [
+  { label: 'Platos fuertes', type: 'plato' },
+  { label: 'Postres', type: 'postre' },
+  { label: 'Bebidas', type: 'bebida' },
+  { label: 'Entradas', type: 'entrada' },
+];
 
 export default function MenuScreen() {
-  const [selectedCategory, setSelectedCategory] = useState('Platos fuertes');
+  const { menu } = useMenu(); // Obtén los datos del menú desde el contexto
+  const [selectedCategory, setSelectedCategory] = useState(categories[0].type); // Categoría seleccionada
+  const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
+  const [isCartVisible, setIsCartVisible] = useState(false); // Estado para mostrar/ocultar el carrito
+  const [step, setStep] = useState(1); // Estado para manejar el paso actual
+  const [tableNumber, setTableNumber] = useState<number | null>(null); // Número de mesa
+  const [allergies, setAllergies] = useState<{ [key: string]: boolean }>({}); // Estado para las alergias
+  const { createOrder } = useData(); // Accede al método createOrder del DataContext
+  const { user } = useAuth(); // Accede al usuario autenticado desde el contexto de autenticación
   const router = useRouter();
 
-  const getImageUrl = (fileName: string) => {
-    const { data } = supabase.storage.from('menu').getPublicUrl(fileName);
-    return data?.publicUrl || '';
+  const allergiesList = ['Nueces', 'Miel', 'Camarones', 'Lácteos'];
+
+  // Filtrar los platos según la categoría seleccionada
+  const filteredPlates = menu.filter((item) => item.type === selectedCategory);
+
+  const getCartItems = () => {
+    return Object.entries(quantities)
+      .filter(([_, quantity]) => quantity > 0)
+      .map(([name, quantity]) => {
+        const item = menu.find((plate) => plate.dish === name);
+        return { ...item, quantity };
+      });
   };
+
+  const getTotalPrice = () => {
+    const cartItems = getCartItems();
+    return cartItems.reduce((total, item) => {
+      const price = parseFloat((item?.price?.toString() ?? '0'));
+      return total + price * item.quantity;
+    }, 0).toFixed(2);
+  };
+
+  const handleOrder = async () => {
+    const cartItems = getCartItems();
+    if (cartItems.length === 0) {
+      Alert.alert('Carrito vacío', 'Por favor, agrega productos al carrito antes de ordenar.');
+      return;
+    }
+
+    if (!user) {
+      Alert.alert('Error', 'No se pudo identificar al usuario. Por favor, inicia sesión.');
+      return;
+    }
+
+    if (!tableNumber) {
+      Alert.alert('Número de mesa', 'Por favor, selecciona un número de mesa.');
+      return;
+    }
+
+    const total = getTotalPrice();
+    const newOrder = {
+      ID_Client: user.uid, // Usa el UID del usuario autenticado como ID_Client
+      date: new Date().toISOString(),
+      order: cartItems.map((item) => ({
+        dish: item.dish ?? '', // Asegúrate de que el nombre del plato sea una cadena
+        quantity: item.quantity,
+      })),
+      state: 'recibido' as 'recibido', // Estado inicial de la orden
+      table: tableNumber, // Número de mesa seleccionado
+      total: parseFloat(total),
+      allergies: Object.keys(allergies).filter((key) => allergies[key]), // Lista de alergias seleccionadas
+    };
+
+    try {
+      await createOrder(newOrder); // Llama al método createOrder del DataContext
+      Alert.alert('Orden realizada', 'Tu orden ha sido enviada con éxito.');
+      setIsCartVisible(false); // Cierra el modal después de ordenar
+      setQuantities({}); // Limpia el carrito
+      setStep(1); // Reinicia el paso
+    } catch (error) {
+      console.error('Error al realizar la orden:', error);
+      Alert.alert('Error', 'Hubo un problema al realizar la orden. Inténtalo de nuevo.');
+    }
+  };
+
+  function handleDecrease(name: string): void {
+    setQuantities((prev) => ({
+      ...prev,
+      [name]: Math.max((prev[name] || 0) - 1, 0),
+    }));
+  }
+
+  function handleIncrease(name: string): void {
+    setQuantities((prev) => ({
+      ...prev,
+      [name]: (prev[name] || 0) + 1,
+    }));
+  }
 
   return (
     <View style={styles.container}>
@@ -40,33 +114,47 @@ export default function MenuScreen() {
           <Text style={styles.locationText}>New York, Las Cruces</Text>
         </View>
       </View>
-
+  
       {/* Content Card */}
       <View style={styles.contentCard}>
         {/* Categorías */}
         <View style={styles.tabs}>
           {categories.map((cat, index) => (
-            <TouchableOpacity key={index} onPress={() => setSelectedCategory(cat)}>
-              <Text style={[styles.tab, selectedCategory === cat && styles.tabSelected]}>
-                {cat}
+            <TouchableOpacity key={index} onPress={() => setSelectedCategory(cat.type)}>
+              <Text style={[styles.tab, selectedCategory === cat.type && styles.tabSelected]}>
+                {cat.label}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
-
+  
         {/* Lista de platos */}
         <FlatList
-          data={allPlates[selectedCategory]}
-          keyExtractor={(item, index) => index.toString()}
+          data={filteredPlates}
+          keyExtractor={(item) => item.ID_dish}
           renderItem={({ item }) => (
             <View style={styles.verticalCard}>
-              <Image
-                source={{ uri: getImageUrl(item.file) }}
-                style={styles.verticalImage}
-              />
               <View style={styles.verticalTextContainer}>
-                <Text style={styles.verticalTitle}>{item.name}</Text>
-                <Text style={styles.verticalPrice}>{item.price}</Text>
+                <Text style={styles.verticalTitle}>{item.dish}</Text>
+                <Text style={styles.verticalPrice}>${item.price}</Text>
+              </View>
+              {/* Contador */}
+              <View style={styles.counterContainer}>
+                <TouchableOpacity
+                  style={styles.counterButton}
+                  onPress={() => handleDecrease(item.dish)}
+                >
+                  <Text style={styles.counterText}>-</Text>
+                </TouchableOpacity>
+                <Text style={styles.counterValue}>
+                  {quantities[item.dish] || 0}
+                </Text>
+                <TouchableOpacity
+                  style={styles.counterButton}
+                  onPress={() => handleIncrease(item.dish)}
+                >
+                  <Text style={styles.counterText}>+</Text>
+                </TouchableOpacity>
               </View>
             </View>
           )}
@@ -74,17 +162,97 @@ export default function MenuScreen() {
           showsVerticalScrollIndicator={false}
         />
       </View>
+  
+      {/* Botón para abrir el carrito */}
+      <TouchableOpacity style={styles.cartButton} onPress={() => setIsCartVisible(true)}>
+        <Icon name="shopping-cart" type="material" color="#fff" size={24} />
+      </TouchableOpacity>
+  
+      {/* Modal del carrito */}
+      {/* Modal del carrito */}
+<Modal visible={isCartVisible} animationType="slide" transparent>
+  <View style={styles.modalContainer}>
+    <View style={styles.modalContent}>
+      {step === 1 ? (
+        <>
+          <Text style={styles.modalTitle}>Tu Carrito</Text>
+          <FlatList
+            data={getCartItems()}
+            keyExtractor={(item) => item.dish ?? 'unknown-dish'}
+            renderItem={({ item }) => (
+              <View style={styles.cartItem}>
+                <Text style={styles.cartItemText}>{item.dish}</Text>
+                <Text style={styles.cartItemText}>x{item.quantity}</Text>
+                <Text style={styles.cartItemText}>${((item.price ?? 0) * item.quantity).toFixed(2)}</Text>
+              </View>
+            )}
+          />
+          <Text style={styles.totalText}>Total: ${getTotalPrice()}</Text>
+          <TouchableOpacity
+            style={styles.nextButton}
+            onPress={() => setStep(2)} // Ir a la segunda parte
+          >
+            <Text style={styles.nextButtonText}>Continuar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.closeButton} onPress={() => setIsCartVisible(false)}>
+            <Text style={styles.closeButtonText}>Cerrar</Text>
+          </TouchableOpacity>
+        </>
+      ) : (
+        <>
+          <Text style={styles.modalTitle}>Detalles de la Orden</Text>
+          {/* Selección de mesa */}
+          <View style={styles.tablePickerContainer}>
+            <Text style={styles.tablePickerLabel}>Número de mesa:</Text>
+            <Picker
+              selectedValue={tableNumber}
+              style={styles.tablePicker}
+              onValueChange={(itemValue) => setTableNumber(itemValue)}
+            >
+              <Picker.Item label="Selecciona" value={null} />
+              {[...Array(10).keys()].map((num) => (
+                <Picker.Item key={num + 1} label={`Mesa ${num + 1}`} value={num + 1} />
+              ))}
+            </Picker>
+          </View>
 
-      {/* Menú inferior */}
-      <View style={styles.bottomNav}>
-        <Icon name="restaurant-menu" type="material" color="#ffa500" />
-        <TouchableOpacity onPress={() => router.navigate('/(app)/client/car')}>
-          <Icon name="shopping-cart" type="material" color="#fff" />
-        </TouchableOpacity>
-      </View>
+          {/* Selección de alergias */}
+          <View style={styles.allergiesContainer}>
+            <Text style={styles.label}>Alergias:</Text>
+            {allergiesList.map((allergy) => (
+              <View key={allergy} style={styles.allergyItem}>
+                <Text style={styles.allergyText}>{allergy}</Text>
+                <Switch
+                  value={allergies[allergy] || false}
+                  onValueChange={(value) =>
+                    setAllergies((prev) => ({ ...prev, [allergy]: value }))
+                  }
+                />
+              </View>
+            ))}
+          </View>
+
+          <TouchableOpacity style={styles.orderButton} onPress={handleOrder}>
+            <Text style={styles.orderButtonText}>Confirmar Orden</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => {
+              setStep(1); // Regresar al paso 1
+              setIsCartVisible(false);
+            }}
+          >
+            <Text style={styles.closeButtonText}>Cerrar</Text>
+          </TouchableOpacity>
+        </>
+      )}
+    </View>
+  </View>
+</Modal>
     </View>
   );
-};
+}
+
 
 const styles = StyleSheet.create({
   container: {
@@ -158,31 +326,167 @@ const styles = StyleSheet.create({
     color: '#ff6b00',
     fontWeight: '600',
   },
-  bottomNav: {
+  counterContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    borderTopWidth: 1,
-    borderTopColor: '#333',
-    paddingVertical: 12,
-    backgroundColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: 100,
   },
+  counterButton: {
+    backgroundColor: '#ffa500',
+    borderRadius: 8,
+    padding: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  counterText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  counterValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  cartButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#ffa500',
+    borderRadius: 30,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  cartItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 8,
+  },
+  cartItemText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  totalText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 16,
+  },
+  closeButton: {
+    marginTop: 16,
+    backgroundColor: '#ffa500',
+    padding: 10,
+    borderRadius: 8,
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  }, 
+    closeIcon: {
+      position: 'absolute',
+      top: 10,
+      right: 10,
+      zIndex: 1,
+    },
+    nextButton: {
+      marginTop: 16,
+      backgroundColor: '#ffa500',
+      padding: 12,
+      borderRadius: 8,
+      alignItems: 'center',
+      width: '100%',
+    },
+    nextButtonText: {
+      color: '#fff',
+      fontWeight: 'bold',
+      fontSize: 16,
+    },
+    orderButton: {
+      marginTop: 16,
+      backgroundColor: '#ffa500',
+      padding: 12,
+      borderRadius: 8,
+      alignItems: 'center',
+      width: '100%',
+    },
+    orderButtonText: {
+      color: '#fff',
+      fontWeight: 'bold',
+      fontSize: 16,
+    },
+    label: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: '#333',
+      marginBottom: 8,
+    },
+    picker: {
+      height: 50,
+      width: '100%',
+      backgroundColor: '#f2f2f2',
+      borderRadius: 8,
+      marginBottom: 16,
+    },
+    allergyItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    allergiesContainer: {
+      marginTop: 16,
+      padding: 10,
+      backgroundColor: '#f9f9f9',
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: '#ddd',
+    },
+    allergyText: {
+      fontSize: 16,
+      fontWeight: '500',
+      color: '#333',
+    },
+    tablePickerContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 16,
+      paddingHorizontal: 16, // Más espacio interno horizontal
+      paddingVertical: 12, // Espaciado vertical para mayor aire
+      backgroundColor: '#f9f9f9',
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: '#ddd',
+    },
+    tablePickerLabel: {
+      fontSize: 16,
+      fontWeight: '500',
+      color: '#333',
+      marginRight: 16, // Más espacio entre el texto y el desplegable
+    },
+    tablePicker: {
+      width: 140, // Ajusta el ancho del desplegable
+      backgroundColor: '#fff',
+      borderRadius: 8,
+    },
 });
-
-
-
-
-
-{/*<FlatList
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        data={[]}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Image source={{ uri: '' }} style={styles.image} />
-            <Text style={styles.itemName}>Item Name</Text>
-            <Text style={styles.price}>$0.00</Text>
-          </View>
-        )}
-      />*/}
-      

@@ -9,9 +9,6 @@ export default function RootLayout() {
       screenOptions={{ headerShown: false }} 
       >
         <Stack.Screen name="index"/>
-        <Stack.Screen name="car"/>
-        <Stack.Screen name="success"/>
-        <Stack.Screen name="orderStatus"/>
       </Stack>
       </MenuProvider>
   )
