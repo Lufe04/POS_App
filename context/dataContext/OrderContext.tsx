@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, getDoc, updateDoc, deleteDoc, doc, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '@/utils/FirebaseConfig'; // Asegúrate de que este archivo esté configurado correctamente
 
 // Define la estructura de una orden
@@ -20,6 +20,7 @@ interface DataContextProps {
   getOrders: () => Promise<void>;
   updateOrder: (ID_Order: string, updatedFields: Partial<Order>) => Promise<void>;
   deleteOrder: (ID_Order: string) => Promise<void>;
+  getOrderStatus: (ID_Client: string, callback: (order: Order | null) => void) => () => void; // Listener en tiempo real
 }
 
 const DataContext = createContext<DataContextProps | undefined>(undefined);
@@ -31,11 +32,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Crear una nueva orden
   const createOrder = async (newOrder: Omit<Order, 'ID_Order'>) => {
     try {
-      const ID_Order = crypto.randomUUID(); // Genera un ID único para la orden
       const docRef = await addDoc(collection(db, 'orders'), {
         ...newOrder,
-        ID_Order, // Agrega el ID generado
       });
+  
+      // Actualiza el documento para incluir el ID generado por Firestore
+      await updateDoc(docRef, { ID_Order: docRef.id });
+  
       console.log('Orden creada con ID:', docRef.id);
       await getOrders(); // Actualiza la lista de órdenes
     } catch (error) {
@@ -62,12 +65,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Actualizar una orden
   const updateOrder = async (ID_Order: string, updatedFields: Partial<Order>) => {
     try {
+      console.log('Intentando actualizar la orden con ID:', ID_Order);
+  
       const orderRef = doc(db, 'orders', ID_Order);
+      const docSnapshot = await getDoc(orderRef);
+  
+      if (!docSnapshot.exists()) {
+        throw new Error(`El documento con ID ${ID_Order} no existe.`);
+      }
+  
       await updateDoc(orderRef, updatedFields); // Actualiza los campos proporcionados
       console.log(`Orden actualizada: ${ID_Order}, Campos:`, updatedFields);
       await getOrders(); // Actualiza la lista de órdenes
     } catch (error) {
       console.error('Error al actualizar la orden:', error);
+      throw error; // Lanza el error para manejarlo en la llamada
     }
   };
 
@@ -83,8 +95,50 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const getOrderStatus = (ID_Client: string, callback: (order: Order | null) => void): (() => void) => {
+    console.log('getOrderStatus llamado con:', { ID_Client });
+  
+    const ordersRef = collection(db, 'orders');
+    const q = query(
+      ordersRef,
+      where('ID_Client', '==', ID_Client),
+      orderBy('date', 'desc'),
+      limit(1)
+    );
+  
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      if (!querySnapshot.empty) {
+        const doc = querySnapshot.docs[0];
+        const lastOrder = { ...doc.data(), ID_Order: doc.id } as Order; // Incluye el ID del documento
+        console.log('Última orden obtenida (en tiempo real):', lastOrder);
+  
+        if (typeof callback === 'function') {
+          callback(lastOrder);
+        } else {
+          console.error('El callback proporcionado no es una función.');
+        }
+      } else {
+        console.warn('No se encontraron órdenes para el cliente.');
+        if (typeof callback === 'function') {
+          callback(null);
+        }
+      }
+    });
+  
+    return unsubscribe;
+  };
+  
   return (
-    <DataContext.Provider value={{ orders, createOrder, getOrders, updateOrder, deleteOrder }}>
+    <DataContext.Provider
+      value={{
+        orders,
+        createOrder,
+        getOrders,
+        updateOrder,
+        deleteOrder,
+        getOrderStatus, // Agregamos la nueva función al contexto
+      }}
+    >
       {children}
     </DataContext.Provider>
   );

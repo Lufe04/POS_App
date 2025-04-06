@@ -54,17 +54,17 @@ export default function MenuScreen() {
       Alert.alert('Carrito vacío', 'Por favor, agrega productos al carrito antes de ordenar.');
       return;
     }
-
+  
     if (!user) {
       Alert.alert('Error', 'No se pudo identificar al usuario. Por favor, inicia sesión.');
       return;
     }
-
+  
     if (!tableNumber) {
       Alert.alert('Número de mesa', 'Por favor, selecciona un número de mesa.');
       return;
     }
-
+  
     const total = getTotalPrice();
     const newOrder = {
       ID_Client: user.uid, // Usa el UID del usuario autenticado como ID_Client
@@ -78,13 +78,14 @@ export default function MenuScreen() {
       total: parseFloat(total),
       allergies: Object.keys(allergies).filter((key) => allergies[key]), // Lista de alergias seleccionadas
     };
-
+  
     try {
       await createOrder(newOrder); // Llama al método createOrder del DataContext
       Alert.alert('Orden realizada', 'Tu orden ha sido enviada con éxito.');
       setIsCartVisible(false); // Cierra el modal después de ordenar
       setQuantities({}); // Limpia el carrito
       setStep(1); // Reinicia el paso
+      router.push('/(app)/client/orderStatus'); // Redirige a la pantalla de estado de la orden
     } catch (error) {
       console.error('Error al realizar la orden:', error);
       Alert.alert('Error', 'Hubo un problema al realizar la orden. Inténtalo de nuevo.');
