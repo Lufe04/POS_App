@@ -8,6 +8,8 @@ export interface MenuItem {
   description: string;
   dish: string;
   price: number;
+  type: 'plato' | 'bebida' | 'entrada' | 'postre'; 
+  url?: string;
 }
 
 // Define el contexto

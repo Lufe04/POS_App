@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/utils/supabase'; // Asegúrate de que este archivo esté configurado correctamente
+import { supabase } from '@/utils/SuperbaseConfig'; // Asegúrate de que este archivo esté configurado correctamente
 import React from 'react';
 
 export default function Page() {

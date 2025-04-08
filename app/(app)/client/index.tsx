@@ -6,6 +6,7 @@ import { useData } from '@/context/dataContext/OrderContext'; // Importa el Data
 import { useAuth} from '@/context/authContext/AuthContext'; // Importa el contexto de autenticación
 import { useMenu } from '@/context/dataContext/MenuContext'; // Importa el contexto del menú
 import { Picker } from '@react-native-picker/picker';
+import { getPublicImageUrl } from '@/utils/SuperbaseConfig';
 
 const categories = [
   { label: 'Platos fuertes', type: 'plato' },
@@ -138,41 +139,44 @@ export default function MenuScreen() {
             </TouchableOpacity>
           ))}
         </View>
-  
         {/* Lista de platos */}
-        <FlatList
-  data={filteredPlates}
-  keyExtractor={(item) => item.ID_dish}
-  renderItem={({ item }) => (
-    <View style={styles.verticalCard}>
-      <View style={styles.verticalTextContainer}>
-        <Text style={styles.verticalTitle}>{item.dish}</Text> {/* Nombre del plato */}
-        <Text style={styles.verticalDescription}>{item.description}</Text> {/* Descripción del plato */}
-        <Text style={styles.verticalPrice}>${item.price}</Text> {/* Precio del plato */}
-      </View>
-      {/* Contador */}
-      <View style={styles.counterContainer}>
-        <TouchableOpacity
-          style={styles.counterButton}
-          onPress={() => handleDecrease(item.dish)}
-        >
-          <Text style={styles.counterText}>-</Text>
-        </TouchableOpacity>
-        <Text style={styles.counterValue}>
-          {quantities[item.dish] || 0}
-        </Text>
-        <TouchableOpacity
-          style={styles.counterButton}
-          onPress={() => handleIncrease(item.dish)}
-        >
-          <Text style={styles.counterText}>+</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  )}
-  contentContainerStyle={{ paddingBottom: 100 }}
-  showsVerticalScrollIndicator={false}
-/>  
+        <FlatList data={filteredPlates} keyExtractor={(item) => item.ID_dish} renderItem={({ item }) => (
+          <View style={styles.verticalCard}>
+            {item.url && (
+              <Image
+                source={{ uri: getPublicImageUrl(item.url.replaceAll('"', '')) }}
+                style={styles.verticalImage}
+                resizeMode="cover"
+              />
+            )}
+            <View style={styles.verticalTextContainer}>
+              <Text style={styles.verticalTitle}>{item.dish}</Text> {/* Nombre del plato */}
+              <Text style={styles.verticalDescription}>{item.description}</Text> {/* Descripción del plato */}
+              <Text style={styles.verticalPrice}>${item.price}</Text> {/* Precio del plato */}
+            </View>
+            {/* Contador */}
+            <View style={styles.counterContainer}>
+              <TouchableOpacity
+                style={styles.counterButton}
+                onPress={() => handleDecrease(item.dish)}
+              >
+                <Text style={styles.counterText}>-</Text>
+              </TouchableOpacity>
+              <Text style={styles.counterValue}>
+                {quantities[item.dish] || 0}
+              </Text>
+              <TouchableOpacity
+                style={styles.counterButton}
+                onPress={() => handleIncrease(item.dish)}
+              >
+                <Text style={styles.counterText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
+        />  
       </View>
   
       {/* Botón para abrir el carrito */}
@@ -260,7 +264,7 @@ export default function MenuScreen() {
       )}
     </View>
   </View>
-</Modal>
+  </Modal>
     </View>
   );
 }
