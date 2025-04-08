@@ -8,7 +8,7 @@ interface Order {
   ID_Order: string;
   date: string;
   order: { dish: string; quantity: number }[]; // Lista de platos y cantidades
-  state: 'recibido' | 'en proceso' | 'entregado';
+  state: 'recibido' | 'en proceso' | 'entregado' | 'Paid'; // Estado de la orden
   table: number;
   total: number;
 }
