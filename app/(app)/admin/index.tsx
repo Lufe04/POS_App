@@ -1,9 +1,11 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useAuth} from '@/context/authContext/AuthContext';
 
 export default function AdminMenu() {
   const router = useRouter();
+  const { user, signOut } = useAuth();
 
   return (
     <View style={styles.container}>
@@ -19,6 +21,17 @@ export default function AdminMenu() {
 
       <TouchableOpacity style={styles.button} onPress={() => router.navigate('/admin/delete')}>
         <Text style={styles.buttonText}>Eliminar Plato</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.logoutButton} onPress={async () => {
+        try {
+          await signOut();
+          router.replace('/auth');
+        } catch (error) {
+          Alert.alert('Error', 'Hubo un problema al cerrar sesión. Inténtalo de nuevo.');
+        }
+      }}>
+        <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
       </TouchableOpacity>
     </View>
   );
@@ -46,6 +59,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  logoutButton: {
+    backgroundColor: '#ff4d4d',
+    padding: 16,
+    borderRadius: 10,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  logoutButtonText: {
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,

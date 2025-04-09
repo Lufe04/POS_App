@@ -8,6 +8,7 @@ import { useMenu } from '@/context/dataContext/MenuContext'; // Importa el conte
 import { Picker } from '@react-native-picker/picker';
 import { getPublicImageUrl } from '@/utils/SuperbaseConfig';
 
+
 const categories = [
   { label: 'Platos fuertes', type: 'plato' },
   { label: 'Postres', type: 'postre' },

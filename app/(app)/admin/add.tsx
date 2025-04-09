@@ -24,74 +24,71 @@ export default function AddDishScreen() {
 
   const handleImageSelected = async (uriOrFile: string | File) => {
     try {
-      let blob: Blob | Uint8Array;
-      let extension = "jpg";
-      let contentType = "image/jpeg";
-      let preview: string;
+      let blob: Blob | Uint8Array;           // Lo que se subirá a Supabase
+      let extension = "jpg";                 // extensión del archivo por defecto
+      let contentType = "image/jpeg";        // tipo MIME por defecto
+      let preview: string;                   // imagen que se muestra en pantalla
   
+      // WEB
       if (Platform.OS === "web") {
-        // ✅ WEB
-        const file = uriOrFile as File;
-        extension = file.name.split(".").pop() ?? "jpg";
-        contentType = file.type;
-        preview = URL.createObjectURL(file);
-        blob = file;
-      } else {
-        // ✅ MÓVIL (Expo Go compatible)
-        const uri = uriOrFile as string;
-        extension = uri.split(".").pop()?.split("?")[0] ?? "jpg";
-        contentType = `image/${extension}`;
-        preview = uri;
+        const file = uriOrFile as File;                                
+        extension = file.name.split(".").pop() ?? "jpg";               // Extrae extensión
+        preview = URL.createObjectURL(file);                           // URL temporal para previsualizar imagen
+        blob = file;                                                   
   
+      } else {
+        // MÓVIL 
+        const uri = uriOrFile as string;                               
+        extension = uri.split(".").pop()?.split("?")[0] ?? "jpg";      // Extraer extensión del archivo desde URI
+        contentType = `image/${extension}`;                           
+        preview = uri;                                                
+  
+        //Manipular imagen
         const manipulated = await ImageManipulator.manipulateAsync(
           uri,
-          [],
-          { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
+          [],                                                           // No se aplica ninguna transformación
+          { compress: 1, format: ImageManipulator.SaveFormat.JPEG }     // Se comprime al máximo y se convierte a JPG
         );
   
-        console.log("📸 Manipulated URI:", manipulated.uri);
+        console.log("Manipulated URI:", manipulated.uri);            // Mensaje con URI temporal resultante
   
+        // Leer archivo como base64
         const base64 = await FileSystem.readAsStringAsync(manipulated.uri, {
           encoding: FileSystem.EncodingType.Base64,
         });
   
-        // 🔁 Convertir base64 a Uint8Array (sin usar Blob)
-        const byteCharacters = atob(base64);
+        // Convertir base64 a Uint8Array para Supabase 
+        const byteCharacters = atob(base64); // Decodifica
         const byteArrays = [];
   
         for (let i = 0; i < byteCharacters.length; i++) {
-          byteArrays.push(byteCharacters.charCodeAt(i));
+          byteArrays.push(byteCharacters.charCodeAt(i)); // Convierte a número
         }
   
         blob = new Uint8Array(byteArrays);
       }
   
-      // ✅ Subida a Supabase
-      const filename = `dish_${Date.now()}.${extension}`;
-      const filePath = `${filename}`;
+      // Subida a Supabase
+      const filename = `dish_${Date.now()}.${extension}`;    // Nombre único basado en timestamp
+      const filePath = `${filename}`;                       
   
-      const { error } = await supabase.storage.from("menu").upload(filePath, blob, {
-        cacheControl: "3600",
-        upsert: true,
-        contentType,
-      });
-  
+      const { error } = await supabase.storage.from("menu").upload(filePath, blob, { cacheControl: "3600", upsert: true, contentType });
+
       if (error) {
-        console.error("❌ Supabase error:", error.message);
+        console.error("Supabase error:", error.message);
         Alert.alert("Error", "No se pudo subir la imagen.");
         return;
       }
-  
-      setImagePreview(preview);
-      setNewDish(prev => ({ ...prev, url: filePath }));
+
+      setImagePreview(preview);                               // Muestra la imagen 
+      setNewDish(prev => ({ ...prev, url: `menu/${filePath}` }));
   
     } catch (error) {
-      console.error("❌ Error al procesar imagen:", error);
+      console.error("Error al procesar imagen:", error);
       Alert.alert("Error", "Fallo al procesar la imagen.");
     }
   };
   
-
   const handleAdd = async () => {
     if (!newDish.name || !newDish.description || !newDish.price || !newDish.url) {
       Alert.alert("Campos incompletos", "Por favor completa todos los campos y selecciona una imagen.");
@@ -107,7 +104,7 @@ export default function AddDishScreen() {
         url: newDish.url,
       });
       Alert.alert("Éxito", "Plato agregado correctamente.");
-      router.replace("/admin");
+      router.back();
     } catch (error) {
       Alert.alert("Error", "Hubo un problema al agregar el plato.");
     }

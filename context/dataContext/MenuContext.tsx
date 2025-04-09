@@ -63,20 +63,16 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addMenuItem = async (item: Omit<MenuItem, "ID_dish">) => {
     try {
       const menuRef = collection(db, "menu");
+      const docRef = await addDoc(menuRef, item); // ✅ se guarda con doc.id
   
-      // Obtener el último ID_dish y calcular el siguiente
-      const querySnapshot = await getDocs(menuRef);
-      const menuItems = querySnapshot.docs.map((doc) => doc.data() as MenuItem);
-      const lastId = menuItems.length > 0 ? Math.max(...menuItems.map((menu) => parseInt(menu.ID_dish))) : 0;
-      const nextId = (lastId + 1).toString();
+      // ✅ opcionalmente también guarda el ID en el campo ID_dish
+      await updateDoc(docRef, { ID_dish: docRef.id });
   
-      // Agregar el nuevo plato con el ID_dish calculado
-      await addDoc(menuRef, { ...item, ID_dish: nextId });
-      await fetchMenu(); // Actualiza el menú después de agregar
+      await fetchMenu(); // 🔄 refresca el menú con el nuevo plato
     } catch (error) {
       console.error("Error al agregar un elemento al menú:", error);
     }
-  };
+  };  
 
   // Actualizar un elemento del menú
   const updateMenuItem = async (id: string, updatedItem: Partial<MenuItem>) => {
