@@ -20,7 +20,8 @@ interface DataContextProps {
   getOrders: () => Promise<void>;
   updateOrder: (ID_Order: string, updatedFields: Partial<Order>) => Promise<void>;
   deleteOrder: (ID_Order: string) => Promise<void>;
-  getOrderStatus: (ID_Client: string, callback: (order: Order | null) => void) => () => void; // Listener en tiempo real
+  getOrderStatus: (ID_Client: string, callback: (order: Order | null) => void) => () => void;
+  getAvailableTables: (date: string) => Promise<number[]>;
 }
 
 const DataContext = createContext<DataContextProps | undefined>(undefined);
@@ -133,6 +134,32 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return unsubscribe;
   };
   
+  const getAvailableTables = async (date: string) => {
+    try {
+      const q = query(
+        collection(db, 'orders'),
+        where('date', '>=', `${date}T00:00:00`),
+        where('date', '<=', `${date}T23:59:59`)
+      );
+      const querySnapshot = await getDocs(q);
+      
+      const allTables = [...Array(10).keys()].map(num => num + 1);
+      const occupiedTables = new Set<number>();
+      
+      querySnapshot.forEach(doc => {
+        const order = doc.data() as Order;
+        if (['recibido', 'en proceso', 'entregado'].includes(order.state)) {
+          occupiedTables.add(order.table);
+        }
+      });
+      
+      return allTables.filter(table => !occupiedTables.has(table));
+    } catch (error) {
+      console.error('Error al obtener mesas disponibles:', error);
+      return [];
+    }
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -141,7 +168,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         getOrders,
         updateOrder,
         deleteOrder,
-        getOrderStatus, // Agregamos la nueva función al contexto
+        getOrderStatus,
+        getAvailableTables,
       }}
     >
       {children}
