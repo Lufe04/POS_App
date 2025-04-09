@@ -6,6 +6,7 @@ import { db } from '@/utils/FirebaseConfig'; // Asegúrate de que este archivo e
 interface Order {
   ID_Client: string;
   ID_Order: string;
+  datePlaced: string;
   date: string;
   order: { dish: string; quantity: number }[]; // Lista de platos y cantidades
   state: 'recibido' | 'en proceso' | 'entregado' | 'Paid'; // Estado de la orden
@@ -35,6 +36,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const docRef = await addDoc(collection(db, 'orders'), {
         ...newOrder,
         date: new Date().toISOString(), // Campo necesario para orden cronológico
+        datePlaced: new Date().toISOString(),
       });
   
       // Guarda también el ID generado por Firestore

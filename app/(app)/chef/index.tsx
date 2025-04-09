@@ -11,23 +11,37 @@ export default function ChefOrdersScreen() {
     getOrders(); // Cargar órdenes al montar la pantalla
   }, []);
 
+  const calculateMinutes = ({ item }: { item: any }) => {
+    const fechaCreacion = new Date(item.datePlaced);
+    const ahora = new Date();
+    const diferencia = ahora.getTime() - fechaCreacion.getTime();
+    return Math.floor(diferencia / 60000); // convertir a minutos
+  };
+
+  
   // 🔶 Este render usa los datos simulados
-  const renderItem = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      style={[styles.card, item.state === 'recibido' && { backgroundColor: '#FFF3E0' }]}
-      // 🔶 RUTA DINÁMICA – asegúrate que /orders/[id].tsx existe
-      onPress={() => router.navigate({ pathname: "/(app)/chef/orderDetail", params: { id: item.ID_Order } })}
-
-
-    >
-      <View style={styles.cardHeader}>
-        <Text style={styles.orderId}>Orden #{item.ID_Order.slice(-3)}</Text>
-        <Text style={styles.mesa}>Mesa {item.table}</Text>
-      </View>
-      <Text style={styles.resumen}>{item.order.map((o: any) => `${o.quantity}x ${o.dish}`).join(', ')}</Text>
-      <Text style={styles.total}>Total: ${item.total.toLocaleString()}</Text>
-    </TouchableOpacity>
-  );
+  const renderItem = ({ item }: { item: any }) => {
+    const minutos = calculateMinutes({ item });
+    const cardStyle = [ styles.card,
+      item.state === 'recibido' && { backgroundColor: '#FFF3E0' },
+      minutos >= 5 && { backgroundColor: '#FFE0E0' } 
+    ];
+    return (
+      <TouchableOpacity
+        style={cardStyle}
+        // 🔶 RUTA DINÁMICA – asegúrate que /orders/[id].tsx existe
+        onPress={() => router.navigate({ pathname: "/(app)/chef/orderDetail", params: { id: item.ID_Order } })}
+      >
+        <View style={styles.cardHeader}>
+          <Text style={styles.orderId}>Orden #{item.ID_Order.slice(-3)}</Text>
+          <Text style={styles.mesa}>Mesa {item.table}</Text>
+        </View>
+        <Text style={styles.tiempo}>Tiempo de Espera {calculateMinutes({ item })} min</Text>
+        <Text style={styles.resumen}>{item.order.map((o: any) => `${o.quantity}x ${o.dish}`).join(', ')}</Text>
+        <Text style={styles.total}>Total: ${item.total.toLocaleString()}</Text>
+      </TouchableOpacity>
+    );
+  }
 
   return (
     <View style={styles.screen}>
@@ -81,6 +95,10 @@ const styles = StyleSheet.create({
       color: '#333',
     },
     mesa: {
+      fontSize: 14,
+      color: '#999',
+    },
+    tiempo:{
       fontSize: 14,
       color: '#999',
     },
