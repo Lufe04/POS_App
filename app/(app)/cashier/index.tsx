@@ -123,15 +123,17 @@ const renderOrder = ({ item }: { item: any }) => (
               <Text style={styles.allergiesText}>
                 Alergias: {selectedOrder.allergies?.join(', ') || 'Ninguna'}
               </Text>
-              <TouchableOpacity
-                style={styles.payButton}
-                onPress={() => {
-                  setIsDetailsModalVisible(false);
-                  setIsPaymentModalVisible(true);
-                }}
-              >
-                <Text style={styles.payButtonText}>Realizar Pago</Text>
-              </TouchableOpacity>
+              {selectedOrder.state === 'entregado' && (
+                <TouchableOpacity
+                  style={styles.payButton}
+                  onPress={() => {
+                    setIsDetailsModalVisible(false);
+                    setIsPaymentModalVisible(true);
+                  }}
+                >
+                  <Text style={styles.payButtonText}>Realizar Pago</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => setIsDetailsModalVisible(false)}

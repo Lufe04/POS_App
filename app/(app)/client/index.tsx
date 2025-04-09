@@ -22,7 +22,7 @@ export default function MenuScreen() {
   const [step, setStep] = useState(1); // Estado para manejar el paso actual
   const [tableNumber, setTableNumber] = useState<number | null>(null); // Número de mesa
   const [allergies, setAllergies] = useState<{ [key: string]: boolean }>({}); // Estado para las alergias
-  const { createOrder } = useData(); // Accede al método createOrder del DataContext
+  const { orders, createOrder } = useData(); // Accede a orders y createOrder del DataContext
   const { user, signOut } = useAuth(); // Accede al usuario autenticado desde el contexto de autenticación
   const router = useRouter();
 
@@ -38,6 +38,18 @@ export default function MenuScreen() {
         const item = menu.find((plate) => plate.dish === name);
         return { ...item, quantity };
       });
+  };
+
+  const getAvailableTables = () => {
+    if (!orders) return [...Array(10).keys()].map(num => num + 1);
+    
+    const occupiedTables = orders
+      .filter((order: any) => ['recibido', 'en proceso', 'entregado'].includes(order.state))
+      .map((order: any) => order.table);
+      
+    return [...Array(10).keys()]
+      .map(num => num + 1)
+      .filter(tableNum => !occupiedTables.includes(tableNum));
   };
 
   const getTotalPrice = () => {
@@ -222,8 +234,12 @@ export default function MenuScreen() {
               onValueChange={(itemValue) => setTableNumber(itemValue)}
             >
               <Picker.Item label="Selecciona" value={null} />
-              {[...Array(10).keys()].map((num) => (
-                <Picker.Item key={num + 1} label={`Mesa ${num + 1}`} value={num + 1} />
+              {getAvailableTables().map((tableNum) => (
+                <Picker.Item 
+                  key={tableNum} 
+                  label={`Mesa ${tableNum}`} 
+                  value={tableNum} 
+                />
               ))}
             </Picker>
           </View>
