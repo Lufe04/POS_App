@@ -22,15 +22,6 @@ interface MenuContextProps {
   getMenu: () => Promise<MenuItem[]>; // Added getMenu to the interface
 }
 
-// Define la estructura del menú
-export interface MenuItem {
-    ID_dish: string; // ID del plato (usado como ID del documento en Firestore)
-    name: string; // Nombre del plato
-    description: string; // Descripción del plato
-    price: number; // Precio del plato
-    type: "plato" | "bebida" | "entrada" | "postre"; // Tipo del plato
-  }
-
 // Crear el contexto
 const MenuContext = createContext<MenuContextProps | undefined>(undefined);
 
