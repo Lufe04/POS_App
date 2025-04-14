@@ -105,43 +105,66 @@ const renderOrder = ({ item }: { item: any }) => (
       />
 
       {/* Modal de detalles */}
-      {selectedOrder && (
-        <Modal visible={isDetailsModalVisible} animationType="slide" transparent>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Detalles de la Orden</Text>
-              <FlatList
-                data={selectedOrder.order}
-                keyExtractor={(item, index) => `${item.dish}-${index}`}
-                renderItem={({ item }) => (
-                  <View style={styles.dishContainer}>
-                    <Text style={styles.dishText}>{item.dish}</Text>
-                    <Text style={styles.dishText}>Cantidad: {item.quantity}</Text>
-                  </View>
-                )}
-              />
-              <Text style={styles.allergiesText}>
-                Alergias: {selectedOrder.allergies?.join(', ') || 'Ninguna'}
-              </Text>
-              <TouchableOpacity
-                style={styles.payButton}
-                onPress={() => {
-                  setIsDetailsModalVisible(false);
-                  setIsPaymentModalVisible(true);
-                }}
-              >
-                <Text style={styles.payButtonText}>Realizar Pago</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setIsDetailsModalVisible(false)}
-              >
-                <Text style={styles.closeButtonText}>Cerrar</Text>
-              </TouchableOpacity>
+{selectedOrder && (
+  <Modal visible={isDetailsModalVisible} animationType="slide" transparent>
+    <View style={styles.modalContainer}>
+      <View style={styles.modalContent}>
+        <Text style={styles.modalTitle}>Detalles de la Orden</Text>
+        <FlatList
+          data={selectedOrder.order}
+          keyExtractor={(item, index) => `${item.dish}-${index}`}
+          renderItem={({ item }) => (
+            <View style={styles.dishContainer}>
+              <Text style={styles.dishText}>{item.dish}</Text>
+              <Text style={styles.dishText}>Cantidad: {item.quantity}</Text>
             </View>
+          )}
+        />
+        <Text style={styles.allergiesText}>
+          Alergias: {selectedOrder.allergies?.join(', ') || 'Ninguna'}
+        </Text>
+        
+        {/* Condicional para mostrar el botón de pago solo en órdenes entregadas */}
+        {selectedOrder.state === 'entregado' && (
+          <TouchableOpacity
+            style={styles.payButton}
+            onPress={() => {
+              setIsDetailsModalVisible(false);
+              setIsPaymentModalVisible(true);
+            }}
+          >
+            <Text style={styles.payButtonText}>Realizar Pago</Text>
+          </TouchableOpacity>
+        )}
+        
+        {/* Mensaje informativo para órdenes que no se pueden pagar aún */}
+        {selectedOrder.state !== 'entregado' && selectedOrder.state !== 'Paid' && (
+          <View style={styles.infoContainer}>
+            <Text style={styles.infoText}>
+              Esta orden no puede pagarse hasta que esté en estado "entregado"
+            </Text>
           </View>
-        </Modal>
-      )}
+        )}
+        
+        {/* Mensaje para órdenes ya pagadas */}
+        {selectedOrder.state === 'Paid' && (
+          <View style={[styles.infoContainer, styles.paidInfo]}>
+            <Text style={styles.paidText}>
+              Esta orden ya ha sido pagada
+            </Text>
+          </View>
+        )}
+        
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={() => setIsDetailsModalVisible(false)}
+        >
+          <Text style={styles.closeButtonText}>Cerrar</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </Modal>
+)}
 
       {/* Modal de pago */}
       {selectedOrder && (
@@ -294,4 +317,26 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
+  // Añadir a los estilos existentes
+infoContainer: {
+  backgroundColor: '#f8f9fa',
+  padding: 12,
+  borderRadius: 8,
+  marginTop: 16,
+  width: '100%',
+  alignItems: 'center',
+},
+infoText: {
+  color: '#6c757d',
+  fontStyle: 'italic',
+  textAlign: 'center',
+},
+paidInfo: {
+  backgroundColor: '#e8f5e9',
+},
+paidText: {
+  color: '#28a745',
+  fontWeight: 'bold',
+  textAlign: 'center',
+},
 });

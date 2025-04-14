@@ -25,10 +25,12 @@ export default function MenuScreen() {
   const [step, setStep] = useState(1); // Estado para manejar el paso actual
   const [tableNumber, setTableNumber] = useState("default"); // Número de mesa
   const [allergies, setAllergies] = useState<{ [key: string]: boolean }>({}); // Estado para las alergias
-  const { createOrder } = useData(); // Accede al método createOrder del DataContext
+  const { createOrder, orders, getOrders } = useData(); // Añadir orders y getOrders
   const { user, signOut } = useAuth(); // Accede al usuario autenticado desde el contexto de autenticación
   const router = useRouter();
   const [isQrVisible, setQrVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [showModalError, setShowModalError] = useState(false);
 
   const allergiesList = ['Nueces', 'Miel', 'Camarones', 'Lácteos'];
 
@@ -53,44 +55,92 @@ export default function MenuScreen() {
   };
 
   const handleOrder = async () => {
-    const cartItems = getCartItems();
-    if (cartItems.length === 0) {
-      Alert.alert('Carrito vacío', 'Por favor, agrega productos al carrito antes de ordenar.');
-      return;
-    }
-  
-    if (!user) {
-      Alert.alert('Error', 'No se pudo identificar al usuario. Por favor, inicia sesión.');
-      return;
-    }
-  
-    if (tableNumber === "default") {
-      Alert.alert('Número de mesa', 'Por favor, selecciona un número de mesa.');
-      return;
-    }
-  
-    const total = getTotalPrice();
-    const newOrder = {
-      ID_Client: user.uid, // Usa el UID del usuario autenticado como ID_Client
-      date: new Date().toISOString(),
-      datePlaced: new Date().toISOString(),
-      order: cartItems.map((item) => ({
-        dish: item.dish ?? '', // Asegúrate de que el nombre del plato sea una cadena
-        quantity: item.quantity,
-      })),
-      state: 'recibido' as 'recibido', // Estado inicial de la orden
-      table: parseInt(tableNumber, 10), // Número de mesa seleccionado
-      total: parseFloat(total),
-      allergies: Object.keys(allergies).filter((key) => allergies[key]), // Lista de alergias seleccionadas
-    };
-  
     try {
-      await createOrder(newOrder); // Llama al método createOrder del DataContext
+      // 1. Obtener los items del carrito
+      const cartItems = getCartItems();
+      console.log("Validando orden:", { cartItems, tableNumber });
+      
+      // 2. VALIDACIONES
+      // Verificar si hay productos en el carrito
+      if (cartItems.length === 0) {
+        console.log("Error: Carrito vacío");
+        setErrorMessage('Por favor, agrega productos al carrito antes de ordenar.');
+        setShowModalError(true);
+        return;
+      }
+      
+      // Verificar si el usuario está autenticado
+      if (!user) {
+        console.log("Error: Usuario no autenticado");
+        setErrorMessage('No se pudo identificar al usuario. Por favor, inicia sesión.');
+        setShowModalError(true);
+        return;
+      }
+      
+      // Verificar si se seleccionó un número de mesa
+      if (tableNumber === "default") {
+        console.log("Error: Mesa no seleccionada");
+        setErrorMessage('Por favor, selecciona un número de mesa para continuar.');
+        setShowModalError(true);
+        return;
+      }
+      
+      // NUEVA VALIDACIÓN: Verificar si la mesa ya está ocupada
+      await getOrders(); // Obtener órdenes actualizadas
+      const mesaOcupada = orders.some(order => 
+        order.table === parseInt(tableNumber, 10) && 
+        ["recibido", "en proceso", "entregado"].includes(order.state)
+      );
+      
+      if (mesaOcupada) {
+        console.log("Error: Mesa ocupada", { tableNumber });
+        setErrorMessage('Esta mesa ya tiene una orden activa. Por favor, selecciona otra mesa.');
+        setShowModalError(true);
+        return;
+      }
+      
+      // Verificar cantidades válidas en cada producto
+      const invalidItems = cartItems.filter(item => !item.quantity || item.quantity <= 0);
+      if (invalidItems.length > 0) {
+        console.log("Error: Productos con cantidades inválidas", invalidItems);
+        setErrorMessage('Hay productos con cantidades inválidas en el carrito.');
+        setShowModalError(true);
+        return;
+      }
+      
+      // Verificar que el total sea un número válido
+      const total = getTotalPrice();
+      if (isNaN(parseFloat(total))) {
+        console.log("Error: Total inválido", { total });
+        setErrorMessage('No se pudo calcular el total. Revisa los precios de los productos.');
+        setShowModalError(true);
+        return;
+      }
+    
+      // 3. PREPARAR ORDEN
+      const newOrder = {
+        ID_Client: user.uid,
+        date: new Date().toISOString(),
+        datePlaced: new Date().toISOString(),
+        order: cartItems.map((item) => ({
+          dish: item.dish ?? '',
+          quantity: item.quantity,
+        })),
+        state: 'recibido' as 'recibido',
+        table: parseInt(tableNumber, 10),
+        total: parseFloat(total),
+        allergies: Object.keys(allergies).filter((key) => allergies[key]),
+      };
+      
+      console.log("Enviando orden:", newOrder);
+      
+      // 4. ENVIAR ORDEN
+      await createOrder(newOrder);
       Alert.alert('Orden realizada', 'Tu orden ha sido enviada con éxito.');
-      setIsCartVisible(false); // Cierra el modal después de ordenar
-      setQuantities({}); // Limpia el carrito
-      setStep(1); // Reinicia el paso
-      router.push('/(app)/client/orderStatus'); // Redirige a la pantalla de estado de la orden
+      setIsCartVisible(false);
+      setQuantities({});
+      setStep(1);
+      router.push('/(app)/client/orderStatus');
     } catch (error) {
       console.error('Error al realizar la orden:', error);
       Alert.alert('Error', 'Hubo un problema al realizar la orden. Inténtalo de nuevo.');
@@ -226,6 +276,19 @@ export default function MenuScreen() {
             ) : (
               <>
                 <Text style={styles.modalTitle}>Detalles de la Orden</Text>
+
+                {/* Mostrar mensajes de error dentro del modal */}
+                {showModalError && (
+                  <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>{errorMessage}</Text>
+                    <TouchableOpacity 
+                      style={styles.errorButton} 
+                      onPress={() => setShowModalError(false)}
+                    >
+                      <Text style={styles.errorButtonText}>OK</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
 
                 {/* Selección de mesa */}
                 <View style={styles.tablePickerContainer}>
@@ -474,111 +537,138 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   }, 
-    closeIcon: {
-      position: 'absolute',
-      top: 10,
-      right: 10,
-      zIndex: 1,
-    },
-    nextButton: {
-      marginTop: 16,
-      backgroundColor: '#ffa500',
-      padding: 12,
-      borderRadius: 8,
-      alignItems: 'center',
-      width: '100%',
-    },
-    nextButtonText: {
-      color: '#fff',
-      fontWeight: 'bold',
-      fontSize: 16,
-    },
-    orderButton: {
-      marginTop: 16,
-      backgroundColor: '#ffa500',
-      padding: 12,
-      borderRadius: 8,
-      alignItems: 'center',
-      width: '100%',
-    },
-    orderButtonText: {
-      color: '#fff',
-      fontWeight: 'bold',
-      fontSize: 16,
-    },
-    label: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: '#333',
-      marginBottom: 8,
-    },
-    picker: {
-      height: 50,
-      width: '100%',
-      backgroundColor: '#f2f2f2',
-      borderRadius: 8,
-      marginBottom: 16,
-    },
-    allergyItem: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 8,
-    },
-    allergiesContainer: {
-      marginTop: 16,
-      padding: 10,
-      backgroundColor: '#f9f9f9',
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: '#ddd',
-    },
-    allergyText: {
-      fontSize: 16,
-      fontWeight: '500',
-      color: '#333',
-    },
-    tablePickerContainer: {
-      alignItems: 'flex-start',
-      width: '100%',
-    },
-    tablePickerLabel: {
-      fontSize: 16,
-      fontWeight: '500',
-      color: '#333',
-      marginBottom: 4,
-    },    
-    selector: {
-      width: '100%',
-      backgroundColor: '#f2f2f2',
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: '#ddd',
-      padding: 12,
-    },
-    selectorInitText: {
-      color: '#999',
-      fontSize: 16,
-    },
-    selectorText: {
-      color: '#333',
-      fontSize: 16,
-    },
-    tablePickerRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      width: '100%',
-      gap: 12, // espacio entre selector y botón QR
-    },
-    qrButton: {
-      padding: 10,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: '#ffa500',
-      backgroundColor: '#fff',
-    },  
-    selectorWrapper: {
-      flex: 1,
-    },  
+  closeIcon: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 1,
+  },
+  nextButton: {
+    marginTop: 16,
+    backgroundColor: '#ffa500',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    width: '100%',
+  },
+  nextButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  orderButton: {
+    marginTop: 16,
+    backgroundColor: '#ffa500',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    width: '100%',
+  },
+  orderButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  picker: {
+    height: 50,
+    width: '100%',
+    backgroundColor: '#f2f2f2',
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  allergyItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  allergiesContainer: {
+    marginTop: 16,
+    padding: 10,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  allergyText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+  tablePickerContainer: {
+    alignItems: 'flex-start',
+    width: '100%',
+  },
+  tablePickerLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 4,
+  },    
+  selector: {
+    width: '100%',
+    backgroundColor: '#f2f2f2',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    padding: 12,
+  },
+  selectorInitText: {
+    color: '#999',
+    fontSize: 16,
+  },
+  selectorText: {
+    color: '#333',
+    fontSize: 16,
+  },
+  tablePickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    gap: 12, // espacio entre selector y botón QR
+  },
+  qrButton: {
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ffa500',
+    backgroundColor: '#fff',
+  },  
+  selectorWrapper: {
+    flex: 1,
+  },
+  // Estilos para el contenedor de errores
+  errorContainer: {
+    backgroundColor: '#ffebeb',
+    borderWidth: 1,
+    borderColor: '#ff8080',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    width: '100%',
+  },
+  errorText: {
+    color: '#cc0000',
+    fontSize: 14,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  errorButton: {
+    backgroundColor: '#ff4d4d',
+    borderRadius: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    alignSelf: 'center',
+  },
+  errorButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
 });
