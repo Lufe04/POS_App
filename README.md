@@ -1,50 +1,152 @@
-# Welcome to your Expo app 👋
+# Aplicación POS de Restaurante con React Native, Firebase y Superbase
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+## Información del Proyecto
+- **Universidad:** Universidad de La Sabana  
+- **Facultad:** Facultad de Ingeniería  
+- **Materia:** Desarrollo Móvil  
+- **Profesor:** Hans Camilo Correa Castro  
 
-## Get started
+## Creado por
+| Nombre | Correo Electrónico |
+|--------|--------------------|
+| Mariana Valle Moreno | marianavamo@unisabana.edu.co |
+| Luisa Fernanda Carpintero Gabanzo | luisacarga@unisabana.edu.co |
 
-1. Install dependencies
+## Estructura de la Documentación
+- [1. Introducción](#1-introducción)
+- [2. Tecnologías Utilizadas](#2-tecnologías-utilizadas)
+- [3. Funcionalidades Clave](#3-funcionalidades-clave)
+- [4. Flujo del Usuario](#4-flujo-del-usuario)
+- [5. Conclusiones](#5-conclusiones)
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
+## 1. Introducción
+<p align="justify">
+Esta aplicación móvil tipo POS (Point of Sale) fue desarrollada para la gestión completa de pedidos en un restaurante. Está diseñada con múltiples flujos para diferentes tipos de usuario: cliente, chef, cajero y administrador.
+</p>
 
-   ```bash
-    npx expo start
-   ```
+### Client
+<p align="justify">
+El cliente puede registrarse o iniciar sesión desde la aplicación. Una vez dentro, puede explorar el menú dividido por categorías como entradas, platos fuertes, postres y bebidas, seleccionar lo que desea ordenar, especificar si tiene alguna alergia, y elegir su mesa ya sea ingresándola manualmente o escaneando un código QR. Finalmente, puede confirmar y enviar su orden con facilidad.
+</p>
 
-In the output, you'll find options to open the app in a
+### Chef
+<p align="justify">
+El chef también puede crear una cuenta o iniciar sesión desde la aplicación. Una vez dentro, recibe en tiempo real y de forma organizada las órdenes enviadas por los clientes. Para cada orden, puede ver el total, los platos solicitados y el tiempo transcurrido desde que fue realizada. Además, la tarjeta de la orden cambia a color rojo si la preparación se está demorando demasiado. Al ingresar a una orden específica, el chef puede ver el número de mesa desde la cual se hizo el pedido y tiene la capacidad de actualizar el estado de la orden: primero a “En proceso” y luego a “Entregado”.
+</p>
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### Cashier
+<p align="justify">
+El cajero también puede crear una cuenta o iniciar sesión desde la aplicación. Una vez dentro, puede visualizar las órdenes filtradas por estado: “Recibido”, “En proceso”, “Entregado” o “Pagado”. Sin embargo, solo las órdenes que se encuentran en estado “Entregado” pueden ser marcadas como pagadas. Cada orden muestra el detalle de los platos seleccionados, sus cantidades y el valor total con impuestos incluidos.
+</p>
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### Administrator
+<p align="justify">
+El administrador tiene acceso a una vista especializada donde puede agregar nuevos platos al menú, editar los existentes o eliminarlos. Para facilitar la gestión, puede buscar platos por su título. Además, al agregar un nuevo plato, tiene la opción de subir una imagen usando la cámara del dispositivo o seleccionándola desde la galería, gracias a la creación de un modal de cámara personalizado.
+</p>
 
-## Get a fresh project
+---
 
-When you're ready, run:
+## 2. Tecnologías Utilizadas
 
-```bash
-npm run reset-project
-```
+| Tecnología             | Descripción                                       |
+|-----------------------|-------------------------------------------------|
+| **React Native**      | Framework para desarrollo móvil multiplataforma. |
+| **Expo Router**       | Sistema de navegación basado en rutas para Expo. |
+| **Firebase Authentication** | Servicio de autenticación de usuarios mediante correo y contraseña. |
+| **Firebase Firestore** | Base de datos en la nube utilizada para almacenar el menú y las órdenes. |
+| **Supabase Storage** | 	Servicio utilizado para almacenar las imágenes de los platos del menú. |
+| **Expo Camera** | 		API utilizada para escanear códigos QR y capturar imágenes desde la cámara. |
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+---
 
-## Learn more
+## 3. Funcionalidades Clave
+- **Autenticación multirol**:	Registro y acceso para clientes, chefs, cajeros y administradores.
+- **Menú visual por categorías**: Visualización del menú dividido en entradas, platos fuertes, postres y bebidas, cada uno con imagen, nombre, descripción y precio para cada plato.
+- **Carrito de compras dinámico**: Selección de platos con control de cantidades y cálculo automático del total.
+- **Registro de alergias**: El cliente puede indicar alergias alimentarias antes de enviar su orden.
+- **Selección de mesa**: El cliente puede elegir su mesa desde un ModalSelector o escanear un código QR.
+- **Seguimiento de pedidos en tiempo real**:	El cliente ve en tiempo real el estado de su orden según lo actualice el chef.
+- **Gestión de pagos**:	El cajero visualiza la orden entregada, calcula impuestos y procesa el pago.
+- **Gestión del menú (CRUD)**: El administrador puede agregar, editar o eliminar platos, incluyendo imágenes capturadas desde cámara o galería.
 
-To learn more about developing your project with Expo, look at the following resources:
+---
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## 4. Flujo del Usuario
 
-## Join the community
+### Client
+1. Inicia sesión o se registra.
+2. Navega el menú y agrega platos al carrito.
+3. Confirma su selección.
+4. Elige su mesa manualmente o escaneando un código QR, y registra alergias si aplica.
+5. Envía su orden y realiza seguimiento en tiempo real.
 
-Join our community of developers creating universal apps.
+<p align="center"> 
+   <img src="Screenshots/" alt="Login Cliente" width="25%"/> 
+   <img src="Screenshots/" alt="Menú" width="25%"/> 
+   <img src="Screenshots/" alt="Mesa Selector" width="25%"/> 
+   <img src="Screenshots/" alt="Registro Alergias" width="25%"/> 
+   <img src="Screenshots/" alt="Estado Orden" width="25%"/> 
+</p>
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### Chef
+1. Visualiza las órdenes ordenadas cronológicamente (de la más antigua a la más reciente).
+2. Cambia el estado de la orden a "En preparación" cuando inicia su elaboración.
+3. Actualiza la orden a "Entregado" una vez finalizada.
+4. La orden desaparece automáticamente del panel principal al ser entregada.
+
+<p align="center"> 
+   <img src="Screenshots/" alt="Login Cliente" width="25%"/> 
+   <img src="Screenshots/" alt="Menú" width="25%"/> 
+   <img src="Screenshots/" alt="Mesa Selector" width="25%"/> 
+   <img src="Screenshots/" alt="Registro Alergias" width="25%"/>
+</p>
+
+### Cashier
+1. Visualiza las órdenes disponibles según su estado.
+2. Accede al detalle de cada orden, incluyendo platos, cantidades, totales e impuestos.
+3. Gestiona el pago y marca la orden como pagada.
+4. Confirma la transacción desde la lista de órdenes pagadas.
+
+<p align="center"> 
+   <img src="Screenshots/" alt="Login Cliente" width="25%"/> 
+   <img src="Screenshots/" alt="Menú" width="25%"/> 
+   <img src="Screenshots/" alt="Mesa Selector" width="25%"/> 
+   <img src="Screenshots/" alt="Registro Alergias" width="25%"/>
+</p>
+
+### Administrator
+1. Puede agregar, editar o eliminar platos del menú.
+2. Agrega nuevos platos con título, descripción, precio y categoría.
+3. Utiliza la cámara o galería para subir imágenes al crear o editar un plato.
+4. Visualiza un preview de la imagen seleccionada antes de confirmar.
+5. Modifica la información de platos existentes.
+6. Elimina platos del menú de forma definitiva.
+
+<p align="center"> 
+   <img src="Screenshots/" alt="Login Cliente" width="25%"/> 
+   <img src="Screenshots/" alt="Menú" width="25%"/> 
+   <img src="Screenshots/" alt="Mesa Selector" width="25%"/> 
+   <img src="Screenshots/" alt="Registro Alergias" width="25%"/>
+   <img src="Screenshots/" alt="Mesa Selector" width="25%"/> 
+   <img src="Screenshots/" alt="Registro Alergias" width="25%"/>
+</p>
+
+---
+
+## 5. Conclusiones
+<p align="justify">
+La aplicación desarrollada representa una solución integral para la gestión eficiente de un restaurante, abarcando todos los roles clave: cliente, chef, cajero y administrador. Este enfoque permite centralizar operaciones, reducir errores humanos y mejorar significativamente la experiencia del usuario en cada etapa del servicio.
+</p>
+
+Entre los principales valores que aporta esta aplicación se destacan:
+
+- **Optimización del flujo de trabajo**: Desde la toma del pedido hasta el pago, cada actor interactúa con una interfaz dedicada y adaptada a su función, lo que agiliza la operación interna del restaurante.
+- **Mejora de la experiencia del cliente**: Gracias a la visualización clara del menú, la posibilidad de escanear un QR para seleccionar la mesa y el seguimiento en tiempo real de la orden, el cliente se siente informado y en control de su experiencia gastronómica.
+- **Reducción de errores y mayor trazabilidad**: La digitalización de los pedidos evita confusiones, permite un registro exacto de lo solicitado y garantiza que la información llegue correctamente a cocina y caja.
+- **Gestión ágil del menú**: El administrador puede mantener actualizado el menú en tiempo real, incluyendo imágenes y precios, con facilidad y sin depender de procesos externos.
+
+<p align="justify">
+En conjunto, esta aplicación no solo mejora la operatividad de un restaurante, sino que también representa una herramienta tecnológica adaptable y robusta, ideal para modernizar el servicio, optimizar procesos y brindar una experiencia más fluida y profesional tanto para el cliente como para el personal del establecimiento.
+</p>
