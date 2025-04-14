@@ -71,6 +71,7 @@ export default function MenuScreen() {
     const newOrder = {
       ID_Client: user.uid, // Usa el UID del usuario autenticado como ID_Client
       date: new Date().toISOString(),
+      datePlaced: new Date().toISOString(), // Agrega la propiedad datePlaced
       order: cartItems.map((item) => ({
         dish: item.dish ?? '', // Asegúrate de que el nombre del plato sea una cadena
         quantity: item.quantity,
