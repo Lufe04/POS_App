@@ -123,12 +123,12 @@ El administrador tiene acceso a una vista especializada donde puede agregar nuev
 6. Elimina platos del menú de forma definitiva.
 
 <p align="center"> 
-   <img src="Screenshots/Panel_Administrador.jgc" alt="Interfaz Administrador" width="15%"/> 
+   <img src="Screenshots/Panel_Administrador.jpg" alt="Interfaz Administrador" width="15%"/> 
    <img src="Screenshots/Agregar_Plato.jpg" alt="Agregar Plato" width="15%"/> 
    <img src="Screenshots/Camera_Modal.jpg" alt="Modal Camara" width="15%"/> 
    <img src="Screenshots/Imagen_Preview.jpg" alt="Visualización Preview" width="15%"/>
-   <img src="Screenshots/Editar_Plato" alt="Editar Plato" width="15%"/> 
-   <img src="Screenshots/Eliminar_Plato" alt="Eliminar Plato" width="15%"/>
+   <img src="Screenshots/Editar_Plato.jpg" alt="Editar Plato" width="15%"/> 
+   <img src="Screenshots/Eliminar_Plato.jpg" alt="Eliminar Plato" width="15%"/>
 </p>
 
 ---
