@@ -83,11 +83,11 @@ El administrador tiene acceso a una vista especializada donde puede agregar nuev
 5. Envía su orden y realiza seguimiento en tiempo real.
 
 <p align="center"> 
-   <img src="Screenshots/" alt="Login Cliente" width="25%"/> 
-   <img src="Screenshots/" alt="Menú" width="25%"/> 
-   <img src="Screenshots/" alt="Mesa Selector" width="25%"/> 
-   <img src="Screenshots/" alt="Registro Alergias" width="25%"/> 
-   <img src="Screenshots/" alt="Estado Orden" width="25%"/> 
+   <img src="Screenshots/Login.jpg" alt="Login Cliente" width="15%"/> 
+   <img src="Screenshots/Menu.jpg" alt="Menú" width="15%"/> 
+   <img src="Screenshots/Confirmar_Orden.jpg" alt="Confirmar Orden" width="15%"/> 
+   <img src="Screenshots/Seleccionar_Mesa.jpg" alt="Selección de Mesa y registro de Alergias" width="15%"/> 
+   <img src="Screenshots/Seguimiento_Orden.jpg" alt="Estado Orden" width="15%"/> 
 </p>
 
 ### Chef
@@ -97,23 +97,21 @@ El administrador tiene acceso a una vista especializada donde puede agregar nuev
 4. La orden desaparece automáticamente del panel principal al ser entregada.
 
 <p align="center"> 
-   <img src="Screenshots/" alt="Login Cliente" width="25%"/> 
-   <img src="Screenshots/" alt="Menú" width="25%"/> 
-   <img src="Screenshots/" alt="Mesa Selector" width="25%"/> 
-   <img src="Screenshots/" alt="Registro Alergias" width="25%"/>
+   <img src="Screenshots/Panel_Chef.jpg" alt="Interfaz Chef" width="15%"/> 
+   <img src="Screenshots/Orden_En_Proceso.jpg" alt="Cambio estado orden a "En Proceso"" width="15%"/> 
+   <img src="Screenshots/Orden_Completada.jpg" alt="Cambio estado orden a "Completado"" width="15%"/> 
+   <img src="Screenshots/Panel_Chef_Actualizado.jpg" alt="Interfaz Chef actualizada sin orden con estado "Completado"" width="15%"/>
 </p>
 
 ### Cashier
 1. Visualiza las órdenes disponibles según su estado.
-2. Accede al detalle de cada orden, incluyendo platos, cantidades, totales e impuestos.
-3. Gestiona el pago y marca la orden como pagada.
-4. Confirma la transacción desde la lista de órdenes pagadas.
+2. Accede al detalle de cada orden, incluyendo platos, cantidades, totales e impuestos, gestiona el pago y marca la orden como completada.
+3. Confirma la transacción desde la lista de órdenes pagadas.
 
 <p align="center"> 
-   <img src="Screenshots/" alt="Login Cliente" width="25%"/> 
-   <img src="Screenshots/" alt="Menú" width="25%"/> 
-   <img src="Screenshots/" alt="Mesa Selector" width="25%"/> 
-   <img src="Screenshots/" alt="Registro Alergias" width="25%"/>
+   <img src="Screenshots/Panel_Cajero.jpg" alt="Interfaz Cajero" width="15%"/> 
+   <img src="Screenshots/Detalles_Orden.jpg" alt="Detalles Orden" width="15%"/> 
+   <img src="Screenshots/Panel_Cajero_Orden_Pagada.jpg" alt="Interfaz Cajero actualizado con orden con estado "Pagado"" width="15%"/>
 </p>
 
 ### Administrator
@@ -125,12 +123,12 @@ El administrador tiene acceso a una vista especializada donde puede agregar nuev
 6. Elimina platos del menú de forma definitiva.
 
 <p align="center"> 
-   <img src="Screenshots/" alt="Login Cliente" width="25%"/> 
-   <img src="Screenshots/" alt="Menú" width="25%"/> 
-   <img src="Screenshots/" alt="Mesa Selector" width="25%"/> 
-   <img src="Screenshots/" alt="Registro Alergias" width="25%"/>
-   <img src="Screenshots/" alt="Mesa Selector" width="25%"/> 
-   <img src="Screenshots/" alt="Registro Alergias" width="25%"/>
+   <img src="Screenshots/Panel_Administrador.jpg" alt="Interfaz Administrador" width="15%"/> 
+   <img src="Screenshots/Agregar_Plato.jpg" alt="Agregar Plato" width="15%"/> 
+   <img src="Screenshots/Camera_Modal.jpg" alt="Modal Camara" width="15%"/> 
+   <img src="Screenshots/Imagen_Preview.jpg" alt="Visualización Preview" width="15%"/>
+   <img src="Screenshots/Editar_Plato.jpg" alt="Editar Plato" width="15%"/> 
+   <img src="Screenshots/Eliminar_Plato.jpg" alt="Eliminar Plato" width="15%"/>
 </p>
 
 ---
