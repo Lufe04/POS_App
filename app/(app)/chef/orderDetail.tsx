@@ -1,7 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, TouchableOpacity } from 'react-native';
 import { useData } from '@/context/dataContext/OrderContext';
+import { Ionicons } from '@expo/vector-icons'; // Importar íconos
 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -16,7 +17,18 @@ export default function OrderDetailScreen() {
   }, [orders, id]);
   
   if (!order) {
-    return <Text style={{ padding: 20 }}>Orden no encontrada</Text>;
+    return (
+      <View style={styles.screen}>
+        {/* Botón de regreso */}
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text style={{ padding: 20, color: '#fff' }}>Orden no encontrada</Text>
+      </View>
+    );
   }
 
   const subtotal = order.order.reduce(
@@ -37,6 +49,14 @@ export default function OrderDetailScreen() {
 
   return (
     <View style={styles.screen}>
+      {/* Botón de regreso */}
+      <TouchableOpacity 
+        style={styles.backButton} 
+        onPress={() => router.back()}
+      >
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </TouchableOpacity>
+      
       <View style={styles.card}>
         <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
           <Text style={styles.title}>Orden #{order.ID_Order.slice(-3)}</Text>
@@ -72,6 +92,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#121212',
     justifyContent: 'flex-end',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 10,
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.3)',
   },
   card: {
     backgroundColor: '#fff',
@@ -113,7 +142,8 @@ const styles = StyleSheet.create({
     width: 40,
     textAlign: 'center',
     color: '#444',
-  },buttonRow: {
+  },
+  buttonRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     position: 'absolute',
