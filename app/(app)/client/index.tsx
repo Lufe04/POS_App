@@ -5,9 +5,10 @@ import { useRouter } from 'expo-router';
 import { useData } from '@/context/dataContext/OrderContext'; // Importa el DataContext
 import { useAuth} from '@/context/authContext/AuthContext'; // Importa el contexto de autenticación
 import { useMenu } from '@/context/dataContext/MenuContext'; // Importa el contexto del menú
-import { Picker } from '@react-native-picker/picker';
 import { getPublicImageUrl } from '@/utils/SuperbaseConfig';
-
+import ModalSelector from 'react-native-modal-selector';
+import QrScannerModal from '@/components/QrCameraModal';
+import { Feather } from '@expo/vector-icons';
 
 const categories = [
   { label: 'Platos fuertes', type: 'plato' },
@@ -22,11 +23,12 @@ export default function MenuScreen() {
   const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
   const [isCartVisible, setIsCartVisible] = useState(false); // Estado para mostrar/ocultar el carrito
   const [step, setStep] = useState(1); // Estado para manejar el paso actual
-  const [tableNumber, setTableNumber] = useState<number | null>(null); // Número de mesa
+  const [tableNumber, setTableNumber] = useState("default"); // Número de mesa
   const [allergies, setAllergies] = useState<{ [key: string]: boolean }>({}); // Estado para las alergias
   const { createOrder } = useData(); // Accede al método createOrder del DataContext
   const { user, signOut } = useAuth(); // Accede al usuario autenticado desde el contexto de autenticación
   const router = useRouter();
+  const [isQrVisible, setQrVisible] = useState(false);
 
   const allergiesList = ['Nueces', 'Miel', 'Camarones', 'Lácteos'];
 
@@ -62,7 +64,7 @@ export default function MenuScreen() {
       return;
     }
   
-    if (!tableNumber) {
+    if (tableNumber === "default") {
       Alert.alert('Número de mesa', 'Por favor, selecciona un número de mesa.');
       return;
     }
@@ -71,13 +73,13 @@ export default function MenuScreen() {
     const newOrder = {
       ID_Client: user.uid, // Usa el UID del usuario autenticado como ID_Client
       date: new Date().toISOString(),
-      datePlaced: new Date().toISOString(), // Agrega la propiedad datePlaced
+      datePlaced: new Date().toISOString(),
       order: cartItems.map((item) => ({
         dish: item.dish ?? '', // Asegúrate de que el nombre del plato sea una cadena
         quantity: item.quantity,
       })),
       state: 'recibido' as 'recibido', // Estado inicial de la orden
-      table: tableNumber, // Número de mesa seleccionado
+      table: parseInt(tableNumber, 10), // Número de mesa seleccionado
       total: parseFloat(total),
       allergies: Object.keys(allergies).filter((key) => allergies[key]), // Lista de alergias seleccionadas
     };
@@ -112,6 +114,7 @@ export default function MenuScreen() {
   return (
     <View style={styles.container}>
       {/* Header */}
+      
       <View style={styles.header}>
       <View style={styles.locationContainer}>
         <Icon name="location-on" type="material" color="#ffa500" size={20} />
@@ -187,86 +190,119 @@ export default function MenuScreen() {
       </TouchableOpacity>
   
       {/* Modal del carrito */}
-      {/* Modal del carrito */}
-<Modal visible={isCartVisible} animationType="slide" transparent>
-  <View style={styles.modalContainer}>
-    <View style={styles.modalContent}>
-      {step === 1 ? (
-        <>
-          <Text style={styles.modalTitle}>Tu Carrito</Text>
-          <FlatList
-            data={getCartItems()}
-            keyExtractor={(item) => item.dish ?? 'unknown-dish'}
-            renderItem={({ item }) => (
-              <View style={styles.cartItem}>
-                <Text style={styles.cartItemText}>{item.dish}</Text>
-                <Text style={styles.cartItemText}>x{item.quantity}</Text>
-                <Text style={styles.cartItemText}>${((item.price ?? 0) * item.quantity).toFixed(2)}</Text>
-              </View>
-            )}
-          />
-          <Text style={styles.totalText}>Total: ${getTotalPrice()}</Text>
-          <TouchableOpacity
-            style={styles.nextButton}
-            onPress={() => setStep(2)} // Ir a la segunda parte
-          >
-            <Text style={styles.nextButtonText}>Continuar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.closeButton} onPress={() => setIsCartVisible(false)}>
-            <Text style={styles.closeButtonText}>Cerrar</Text>
-          </TouchableOpacity>
-        </>
-      ) : (
-        <>
-          <Text style={styles.modalTitle}>Detalles de la Orden</Text>
-          {/* Selección de mesa */}
-          <View style={styles.tablePickerContainer}>
-            <Text style={styles.tablePickerLabel}>Número de mesa:</Text>
-            <Picker
-              selectedValue={tableNumber}
-              style={styles.tablePicker}
-              onValueChange={(itemValue) => setTableNumber(itemValue)}
-            >
-              <Picker.Item label="Selecciona" value={null} />
-              {[...Array(10).keys()].map((num) => (
-                <Picker.Item key={num + 1} label={`Mesa ${num + 1}`} value={num + 1} />
-              ))}
-            </Picker>
-          </View>
-
-          {/* Selección de alergias */}
-          <View style={styles.allergiesContainer}>
-            <Text style={styles.label}>Alergias:</Text>
-            {allergiesList.map((allergy) => (
-              <View key={allergy} style={styles.allergyItem}>
-                <Text style={styles.allergyText}>{allergy}</Text>
-                <Switch
-                  value={allergies[allergy] || false}
-                  onValueChange={(value) =>
-                    setAllergies((prev) => ({ ...prev, [allergy]: value }))
-                  }
+      <Modal visible={isCartVisible} animationType="slide" transparent>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            {step === 1 ? (
+              <>
+                <Text style={styles.modalTitle}>Tu Carrito</Text>
+                <FlatList
+                  data={getCartItems()}
+                  keyExtractor={(item) => item.dish ?? 'unknown-dish'}
+                  renderItem={({ item }) => (
+                    <View style={styles.cartItem}>
+                      <Text style={styles.cartItemText}>{item.dish}</Text>
+                      <Text style={styles.cartItemText}>x{item.quantity}</Text>
+                      <Text style={styles.cartItemText}>
+                        ${((item.price ?? 0) * item.quantity).toFixed(2)}
+                      </Text>
+                    </View>
+                  )}
                 />
-              </View>
-            ))}
-          </View>
+                <Text style={styles.totalText}>Total: ${getTotalPrice()}</Text>
+                <TouchableOpacity
+                  style={styles.nextButton}
+                  onPress={() => setStep(2)} // Ir a la segunda parte
+                >
+                  <Text style={styles.nextButtonText}>Continuar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setIsCartVisible(false)}
+                >
+                  <Text style={styles.closeButtonText}>Cerrar</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={styles.modalTitle}>Detalles de la Orden</Text>
 
-          <TouchableOpacity style={styles.orderButton} onPress={handleOrder}>
-            <Text style={styles.orderButtonText}>Confirmar Orden</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => {
-              setStep(1); // Regresar al paso 1
-              setIsCartVisible(false);
-            }}
-          >
-            <Text style={styles.closeButtonText}>Cerrar</Text>
-          </TouchableOpacity>
-        </>
-      )}
-    </View>
-  </View>
-  </Modal>
+                {/* Selección de mesa */}
+                <View style={styles.tablePickerContainer}>
+                  <Text style={styles.tablePickerLabel}>Número de mesa:</Text>
+                  <View style={styles.tablePickerRow}>
+                    <View style={styles.selectorWrapper}>
+                      <ModalSelector
+                        data={[...Array(10).keys()].map((i) => ({
+                          key: (i + 1).toString(),
+                          label: `Mesa ${i + 1}`,
+                        }))}
+                        initValue="Selecciona una mesa"
+                        onChange={(option) => setTableNumber(option.key)}
+                        style={styles.selector}
+                        initValueTextStyle={styles.selectorInitText}
+                        selectTextStyle={styles.selectorText}
+                      >
+                        <View style={styles.selector}>
+                          <Text style={tableNumber === 'default' ? styles.selectorInitText : styles.selectorText}>
+                            {tableNumber === 'default' ? 'Selecciona una mesa' : `Mesa ${tableNumber}`}
+                          </Text>
+                        </View>
+                      </ModalSelector>
+                    </View>
+
+                    {/* Botón para escanear QR */}
+                    <TouchableOpacity onPress={() => setQrVisible(true)} style={styles.qrButton}>
+                      <Feather name="camera" size={20} color="#ffa500" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Selección de alergias */}
+                <View style={styles.allergiesContainer}>
+                  <Text style={styles.label}>Alergias:</Text>
+                  {allergiesList.map((allergy) => (
+                    <View key={allergy} style={styles.allergyItem}>
+                      <Text style={styles.allergyText}>{allergy}</Text>
+                      <Switch
+                        value={allergies[allergy] || false}
+                        onValueChange={(value) =>
+                          setAllergies((prev) => ({ ...prev, [allergy]: value }))
+                        }
+                      />
+                    </View>
+                  ))}
+                </View>
+
+                <TouchableOpacity style={styles.orderButton} onPress={handleOrder}>
+                  <Text style={styles.orderButtonText}>Confirmar Orden</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => {
+                    setStep(1); // Regresar al paso 1
+                    setIsCartVisible(false);
+                  }}
+                >
+                  <Text style={styles.closeButtonText}>Cerrar</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+        <QrScannerModal
+          isVisible={isQrVisible}
+          onClose={() => setQrVisible(false)}
+          onCodeScanned={(code) => {
+            const match = code.match(/mesa:(\d+)/i);
+            if (match && match[1]) {
+              setTableNumber(match[1]);
+            } else {
+              Alert.alert('Código no válido', 'Asegúrate de escanear un código válido con formato "mesa:4".');
+            }
+          }}
+        />
+      </Modal>
     </View>
   );
 }
@@ -503,26 +539,46 @@ const styles = StyleSheet.create({
       color: '#333',
     },
     tablePickerContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: 16,
-      paddingHorizontal: 16, // Más espacio interno horizontal
-      paddingVertical: 12, // Espaciado vertical para mayor aire
-      backgroundColor: '#f9f9f9',
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: '#ddd',
+      alignItems: 'flex-start',
+      width: '100%',
     },
     tablePickerLabel: {
       fontSize: 16,
       fontWeight: '500',
       color: '#333',
-      marginRight: 16, // Más espacio entre el texto y el desplegable
-    },
-    tablePicker: {
-      width: 140, // Ajusta el ancho del desplegable
-      backgroundColor: '#fff',
+      marginBottom: 4,
+    },    
+    selector: {
+      width: '100%',
+      backgroundColor: '#f2f2f2',
       borderRadius: 8,
+      borderWidth: 1,
+      borderColor: '#ddd',
+      padding: 12,
     },
+    selectorInitText: {
+      color: '#999',
+      fontSize: 16,
+    },
+    selectorText: {
+      color: '#333',
+      fontSize: 16,
+    },
+    tablePickerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      width: '100%',
+      gap: 12, // espacio entre selector y botón QR
+    },
+    qrButton: {
+      padding: 10,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: '#ffa500',
+      backgroundColor: '#fff',
+    },  
+    selectorWrapper: {
+      flex: 1,
+    },  
 });

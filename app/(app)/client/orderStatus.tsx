@@ -6,6 +6,7 @@ import { useMenu } from '@/context/dataContext/MenuContext';
 import { MenuItem } from '@/context/dataContext/MenuContext';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Define the Order type
 type Order = {
@@ -103,16 +104,16 @@ export default function OrderStatusScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Flecha para regresar */}
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Ionicons name="arrow-back" size={24} color="#fff" />
-      </TouchableOpacity>
+    <SafeAreaView style={styles.container}>
 
+      {/* Flecha para regresar */}
       <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Estado de tu Orden</Text>
       </View>
-
+      
       {order ? (
         <ScrollView style={styles.content}>
           {/* Estado de la orden */}
@@ -194,15 +195,27 @@ export default function OrderStatusScreen() {
           </TouchableOpacity>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  backButton: { position: 'absolute', top: 16, left: 16, zIndex: 10 },
-  header: { backgroundColor: '#ffa500', padding: 16, alignItems: 'center' },
-  headerTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+  header: {
+    backgroundColor: '#ffa500',
+    padding: 16,
+    paddingTop: 0, // lo maneja SafeAreaView
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    marginRight: 12,
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
   content: { padding: 16 },
   statusContainer: { backgroundColor: '#f9f9f9', padding: 16, borderRadius: 8, marginBottom: 16 },
   statusTitle: { fontSize: 18, fontWeight: 'bold', color: '#333' },
